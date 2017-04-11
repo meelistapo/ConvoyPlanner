@@ -1,0 +1,29 @@
+{
+  "name": "convoy_planner",
+  "version": "1.0.0",
+  "description": "Application for military convoy movement planning",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meelistapo/convoy_planner.git"
+  },
+  "keywords": [
+    "convoy",
+    "movement",
+    "planning",
+    "scheduling"
+  ],
+  "author": "Meelis Tapo",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/meelistapo/convoy_planner/issues"
+  },
+  "homepage": "https://github.com/meelistapo/convoy_planner#readme",
+  "devDependencies": {
+    "electron": "^1.6.2"
+  }
+}
