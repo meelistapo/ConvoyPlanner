@@ -24,6 +24,14 @@
   },
   "homepage": "https://github.com/meelistapo/convoy_planner#readme",
   "devDependencies": {
-    "electron": "^1.6.2"
+    "devtron": "^1.4.0",
+    "electron": "^1.6.11",
+    "zerorpc": "fyears/zerorpc-node"
+  },
+  "dependencies": {
+    "bootstrap": "^3.3.7",
+    "electron-debug": "^1.1.0",
+    "jquery": "^3.2.1",
+    "leaflet": "^1.0.3"
   }
 }

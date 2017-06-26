@@ -4,8 +4,43 @@
 <meta charset=utf-8 />
 <title>Convoy movment planner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="node_modules/leaflet/dist/leaflet.css">
+<script type="text/javascript" src="node_modules/leaflet/dist/leaflet.js"></script>
+<script type="text/javascript" src="movingMarker.js"></script>
+
 </head>
 <body>
-  <p> Hello world! </p>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-12">
+        <table class="table table-bordered table-hover" id="tableAddRow">
+          <thead>
+          <tr>
+            <th>User Name</th>
+            <th>Email</th>
+            <th>Password</th>
+            <th style="width:10px"><span class="glyphicon glyphicon-plus addBtn" id="addBtn_0"></span></th>
+          </tr>
+          </thead>
+          <tbody>
+          <tr id="tr_0">
+            <td><p>uid</p></td>
+            <td><button type="button" class="btn btn-primary origin">Lähtepunkt</button></td>
+            <td><button type="button" class="btn btn-primary destination">Sihtpunkt</button></td>
+            <td><input type="text" id="password" class="form-control" /></td>
+            <td><span class="glyphicon glyphicon-minus addBtnRemove" id="addBtnRemove_0"></span></td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <input id="formula" value=""> </input>
+  <div id="result"></div>
+  <div id="map"></div>
 </body>
+<script> require('./index.js')</script>
+<script> require('./renderer.js')</script>
 </html>

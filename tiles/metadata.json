@@ -1,0 +1,11 @@
+{
+    "attribution": "", 
+    "description": "Tiles of Estonia's topographic map", 
+    "center": "25.1305,58.7764,8", 
+    "bounds": "21.6918,57.5155,28.355,59.7975", 
+    "minzoom": "8", 
+    "version": "1.0.0", 
+    "template": "", 
+    "maxzoom": "11", 
+    "name": "Estonia"
+}
