@@ -1,3 +1,4 @@
+from exact import calculate
 from exact import tere
 import sys
 import zerorpc
@@ -5,13 +6,22 @@ import zerorpc
 
 class ConvoyApi(object):
 
-    def calc(self, text):
+    def calc(self, data):
         """based on the input text, return the int result"""
         try:
             # return real_calc(text)
-            return tere(text)
+            return calculate(data)
         except Exception as e:
             return 0.0
+
+    def generatePaths(self, data):
+        """based on the input text, return the int result"""
+        try:
+            return calculate(data)
+        except Exception as e:
+            return e
+
+
 
     def echo(self, text):
         """echo any text"""

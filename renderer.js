@@ -10,20 +10,33 @@ client.invoke("echo", "server ready", (error, res) => {
     }
 });
 
-let formula = document.querySelector('#formula');
-let result = document.querySelector('#result');
+// let formula = document.querySelector('#formula');
+// let result = document.querySelector('#result');
 
-formula.addEventListener('input', () => {
-    client.invoke("calc", formula.value, (error, res) => {
+
+function getPaths(data) {
+        console.log(data);
+        client.invoke("generatePaths", data, (error, result) => {
         if(error) {
             console.error(error);
-        } else {
-            result.textContent = res;
+        }
+        else {
+            console.log(result);
+            return result;
         }
     })
-});
-
-formula.dispatchEvent(new Event('input'));
+}
+// formula.addEventListener('input', () => {
+//     client.invoke("calc", formula.value, (error, res) => {
+//         if(error) {
+//             console.error(error);
+//         } else {
+//             result.textContent = res;
+//         }
+//     })
+// });
+//
+// formula.dispatchEvent(new Event('input'));
 
 
 

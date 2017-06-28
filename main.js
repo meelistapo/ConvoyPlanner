@@ -43,8 +43,7 @@ app.on('window-all-closed', () => {
 
 // create browser window
 function createWindow(){
-    win = new BrowserWindow({width:1200, height: 800});
-
+    win = new BrowserWindow({width:1200, height: 900, resizable: false, fullscreen: false,});
     // load index.html
     win.loadURL(`file://${__dirname}/index.html`);
 

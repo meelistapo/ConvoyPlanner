@@ -512,7 +512,25 @@ def find_feasible_paths():
     return all_feasible_paths, lower_bound, upper_bound
 
 
+def calculate(data):
+    # init(data)
+    return str(optimality)
 
+def init(data):
+    for convoyID, convoyData in data.items():
+        for feature, value in convoyData.items():
+            if feature=='origin':
+                origin.append(int(value))
+            elif feature=='destination':
+                destination.append(int(value))
+            elif feature=='length':
+                convoy_length.append(int(value))
+            elif feature=='speed':
+                speed.append(int(value))
+            elif feature=='ready':
+                ready_time.append(int(value))
+            elif feature=='due':
+                due_time.append(int(value))
 
 
 def tere(text):
@@ -523,16 +541,23 @@ def tere(text):
 
 if __name__ == '__main__':
 
-    origin = [1,2,3,4,5,6,7,8,9,10]
-    # origin = [3338, 2960] #, 164, 2960]
-    # destination = [3800, 164] #, 3800, 3338]
-    destination = [11,12, 13 ,14,15,16,17,18,19,20]
-    ready_time = [0, 0, 0, 0, 0, 0, 0, 0.14,0,0]
-    due_time = [10, 10, 10, 10,10,10,10,10,10,10]
-    convoy_length = [10, 10, 10, 10,10,10,10,10,10,10]
+    origin = []
+    destination = []
+    convoy_length = []
+    speed = []
+    ready_time = []
+    due_time = []
+
+    # origin = [1,2,3,4,5,6,7,8,9,10]
+    # # origin = [3338, 2960] #, 164, 2960]
+    # # destination = [3800, 164] #, 3800, 3338]
+    # destination = [11,12, 13 ,14,15,16,17,18,19,20]
+    # ready_time = [0, 0, 0, 0, 0, 0, 0, 0.14,0,0]
+    # due_time = [10, 10, 10, 10,10,10,10,10,10,10]
+    # convoy_length = [10, 10, 10, 10,10,10,10,10,10,10]
     convoy_count = len(origin)
     headway = 0.05
-    speed = [50, 50, 50, 50,50,50,50,50,50,50]
+    # speed = [50, 50, 50, 50,50,50,50,50,50,50]
     convoys = len(origin)
     k = 1
     step = 0.5
