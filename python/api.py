@@ -1,7 +1,7 @@
-from exact import calculate
-from exact import tere
 import sys
 import zerorpc
+import gevent
+from exact import calculate
 
 
 class ConvoyApi(object):
@@ -20,8 +20,6 @@ class ConvoyApi(object):
             return calculate(data)
         except Exception as e:
             return e
-
-
 
     def echo(self, text):
         """echo any text"""
@@ -42,7 +40,8 @@ def main():
     s = zerorpc.Server(ConvoyApi())
     s.bind(addr)
     print('start running on {}'.format(addr))
-    s.run()
+    gevent.spawn(s.run())
+
 
 if __name__ == '__main__':
     main()

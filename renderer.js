@@ -14,15 +14,14 @@ client.invoke("echo", "server ready", (error, res) => {
 // let result = document.querySelector('#result');
 
 
-function getPaths(data) {
-        console.log(data);
+function getPaths(data, callback) {
         client.invoke("generatePaths", data, (error, result) => {
         if(error) {
             console.error(error);
         }
         else {
             console.log(result);
-            return result;
+            callback(result);
         }
     })
 }

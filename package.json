@@ -26,13 +26,19 @@
   "devDependencies": {
     "devtron": "^1.4.0",
     "electron": "^1.6.11",
+    "electron-rebuild": "^1.5.11",
     "zerorpc": "fyears/zerorpc-node"
   },
   "dependencies": {
     "bootstrap": "^3.3.7",
+    "bootstrap-timepicker": "^0.5.2",
+    "drmonty-leaflet-awesome-markers": "^2.0.2",
     "electron-debug": "^1.1.0",
     "eonasdan-bootstrap-datetimepicker": "^4.17.47",
+    "font-awesome": "^4.7.0",
+    "fs": "0.0.1-security",
     "jquery": "^3.2.1",
+    "jquery-ui-dist": "^1.12.1",
     "leaflet": "^1.0.3",
     "leaflet-knn": "^0.1.0"
   }

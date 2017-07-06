@@ -5,11 +5,33 @@
 <title>Convoy movment planner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link rel="stylesheet" href="style.css" />
+<link rel="stylesheet" href="node_modules/jquery-ui-dist/jquery-ui.min.css">
 <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="node_modules/bootstrap-timepicker/css/bootstrap-timepicker.min.css">
 <link rel="stylesheet" href="node_modules/leaflet/dist/leaflet.css">
+<link rel="stylesheet" href="node_modules/font-awesome/css/font-awesome.min.css">
+<link rel="stylesheet" href="node_modules/drmonty-leaflet-awesome-markers/css/leaflet.awesome-markers.css">
+<!--<script type="text/javascript" src="node_modules/jquery/dist/jquery.min.js"></script>-->
+<script>window.$ = window.jQuery = require('jquery');</script>
+<script type="text/javascript" src="node_modules/jquery-ui-dist/jquery-ui.min.js"></script>
 <script type="text/javascript" src="node_modules/leaflet/dist/leaflet.js"></script>
+<script type="text/javascript" src="node_modules/drmonty-leaflet-awesome-markers/js/leaflet.awesome-markers.min.js"></script>
+<script type="text/javascript" src="node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="node_modules/bootstrap-timepicker/js/bootstrap-timepicker.min.js"></script>
+<script type="text/javascript" src="LeafletPlayback.js"></script>
 <script type="text/javascript" src="movingMarker.js"></script>
 <script type="text/javascript" src="renderer.js"></script>
+
+
+<script src="src/Util.js"></script>
+<script src="src/MoveableMarker.js"></script>
+<script src="src/TickPoint.js"></script>
+<script src="src/Tick.js"></script>
+<script src="src/Clock.js"></script>
+<script src="src/Playback.js"></script>
+
+
+
 
 </head>
 <body>
@@ -22,44 +44,22 @@
         </div>
       </div>
       <div class="navbar-collapse collapse">
-        <form class="navbar-form navbar-right" role="search">
-          <div class="form-group has-feedback">
-            <input id="searchbox" type="text" placeholder="Search" class="form-control">
-            <span id="searchicon" class="glyphicon glyphicon-search form-control-feedback"></span>
-          </div>
-        </form>
         <ul class="nav navbar-nav">
-          <li class="hidden-xs"><a href="#" data-toggle="collapse" data-target=".navbar-collapse.in" id="list-btn"><i class="fa fa-list white"></i>&nbsp;&nbsp;Convoys</a></li>
-          <li class="dropdown">
-            <a id="toolsDrop" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown"><i class="fa fa-globe white"></i>&nbsp;&nbsp;Settings <b class="caret"></b></a>
-            <ul class="dropdown-menu">
-              <li><a href="#" data-toggle="collapse" data-target=".navbar-collapse.in" id="full-extent-btn"><i class="fa fa-arrows-alt"></i>&nbsp;&nbsp;Zoom To Full Extent</a></li>
-              <li><a href="#" data-toggle="collapse" data-target=".navbar-collapse.in" id="legend-btn"><i class="fa fa-picture-o"></i>&nbsp;&nbsp;Show Legend</a></li>
-              <li class="divider hidden-xs"></li>
-              <li><a href="#" data-toggle="collapse" data-target=".navbar-collapse.in" id="login-btn"><i class="fa fa-user"></i>&nbsp;&nbsp;Login</a></li>
-            </ul>
-          </li>
-          <li class="dropdown">
-            <a class="dropdown-toggle" id="downloadDrop" href="#" role="button" data-toggle="dropdown"><i class="fa fa-cloud-download white"></i>&nbsp;&nbsp;Download <b class="caret"></b></a>
-            <ul class="dropdown-menu">
-              <li><a href="data/boroughs.geojson" download="boroughs.geojson" target="_blank" data-toggle="collapse" data-target=".navbar-collapse.in"><i class="fa fa-download"></i>&nbsp;&nbsp;Boroughs</a></li>
-              <li><a href="data/subways.geojson" download="subways.geojson" target="_blank" data-toggle="collapse" data-target=".navbar-collapse.in"><i class="fa fa-download"></i>&nbsp;&nbsp;Subway Lines</a></li>
-              <li><a href="data/DOITT_THEATER_01_13SEPT2010.geojson" download="theaters.geojson" target="_blank" data-toggle="collapse" data-target=".navbar-collapse.in"><i class="fa fa-download"></i>&nbsp;&nbsp;Theaters</a></li>
-              <li><a href="data/DOITT_MUSEUM_01_13SEPT2010.geojson" download="museums.geojson" target="_blank" data-toggle="collapse" data-target=".navbar-collapse.in"><i class="fa fa-download"></i>&nbsp;&nbsp;Museums</a></li>
-            </ul>
-          </li>
+          <li class="hidden-xs"><a href="#" data-toggle="collapse" data-target=".navbar-collapse.in" id="list-menu"><i class="fa fa-list white"></i>&nbsp;&nbsp;Convoys</a></li>
+          <li><a href="#" data-toggle="collapse" data-target=".navbar-collapse.in" id="settings-btn"><i class="fa fa-cog"></i>&nbsp;&nbsp;Settings</a> </li>
+          <li><a href="#" data-toggle="collapse" data-target=".navbar-collapse.in" id="stat-menu"><i class="fa fa-list-alt"></i>&nbsp;&nbsp;Statistics</a></li>
           <li><a href="#" data-toggle="collapse" data-target=".navbar-collapse.in" id="about-btn"><i class="fa fa-question-circle white"></i>&nbsp;&nbsp;About</a></li>
         </ul>
-        <div class='col-xs-3'>
-          <div class="navbar-form">
-            <div class='input-group date' id='datetimepicker'>
-              <input type='text' class="form-control" />
-              <span class="input-group-addon">
-                    <span class="glyphicon glyphicon-calendar"></span>
-                </span>
-            </div>
-          </div>
-        </div>
+        <!--<div class='col-xs-3'>-->
+          <!--<div class="navbar-form">-->
+            <!--<div class='input-group date' id='datetimepicker'>-->
+              <!--<input type='text' class="form-control" />-->
+              <!--<span class="input-group-addon">-->
+                    <!--<span class="glyphicon glyphicon-calendar"></span>-->
+                <!--</span>-->
+            <!--</div>-->
+          <!--</div>-->
+        <!--</div>-->
 
 
       </div><!--/.navbar-collapse -->
@@ -69,12 +69,15 @@
   <div id="container">
     <div id="sidebar">
       <div class="sidebar-wrapper">
-        <div class="panel panel-default" id="features">
+        <div class="panel panel-default hidden" id="features">
           <div class="panel-heading">
             <h3 class="panel-title">List of Convoys
-              <button type="button" class="btn btn-xs btn-default pull-right" id="sidebar-hide-btn"><i class="glyphicon glyphicon-chevron-left"></i></button></h3>
+              <button type="button" class="btn btn-xs btn-default pull-right sidebar-hide-btn"><i class="glyphicon glyphicon-chevron-left"></i></button></h3>
           </div>
           <div class="panel-body">
+            <div>
+              <button type="button" class="btn btn-md btn-success btn-block hidden" id="run-btn"><i></i>Run</button>
+            </div>
             <div>
               <button type="button" class="btn btn-md btn-success btn-block hidden" id="calc-btn"><i></i>Calculate paths</button>
             </div>
@@ -100,37 +103,389 @@
           </div>
         </div>
       </div>
+      <div class="statbar-wrapper hidden">
+        <div class="panel panel-default">
+          <div class="panel-heading">
+            <h3 class="panel-title">Statistcs
+              <button type="button" class="btn btn-xs btn-default pull-right sidebar-toggle-btn"><i class="glyphicon glyphicon-chevron-left"></i></button></h3>
+          </div>
+          <div class="panel-body">
+            <div>
+              <button type="button" class="btn btn-md btn-block" id="add-point-btn"><i></i>Add a checkpoint</button>
+            </div>
+          </div>
+          <div class="statbar-table">
+            <table class="table table-hover" id="stat-list">
+              <thead>
+              <tr class='stat-table-header'>
+                <th></th>
+                <th>ID</th>
+                <th>Start time</th>
+                <th>Finish time</th>
+                <th>Travel time</th>
+                <th>Pass time</th>
+              </tr>
+              </thead>
+            </table>
+          </div>
+        </div>
+      </div>
     </div>
-    <div id="map"></div>
-  </div>
+    <!--<div id="statbar">-->
 
-  <!--<div class="container">-->
-    <!--<div class="row">-->
-      <!--<div class="col-lg-12">-->
-        <!--<table class="table table-bordered table-hover" id="tableAddRow">-->
-          <!--<thead>-->
-          <!--<tr>-->
-            <!--<th colspan="3">Lisa kolonn</th>-->
-            <!--<th style="width:10px"><span class="glyphicon glyphicon-plus addBtn" id="addBtn_0"></span></th>-->
-          <!--</tr>-->
-          <!--</thead>-->
-          <!--<tbody>-->
-          <!--<tr id="tr_0">-->
-            <!--<td><p>uid</p></td>-->
-            <!--<td><button type="button" class="btn btn-primary origin">Lähtepunkt</button></td>-->
-            <!--<td><button type="button" class="btn btn-primary destination">Sihtpunkt</button></td>-->
-            <!--<td><input type="text" id="password" class="form-control" /></td>-->
-            <!--<td><span class="glyphicon glyphicon-minus addBtnRemove" id="addBtnRemove_0"></span></td>-->
-          <!--</tr>-->
-          <!--</tbody>-->
-        <!--</table>-->
+    <!--</div>-->
+    <div id="map">
+      <!--<div class="leaflet-top leaflet-right">-->
+        <!--<div class="leaflet-control-layers leaflet-control-layers-expanded leaflet-control" aria-haspopup="true">-->
+          <!--<form class="leaflet-control-layers-list">-->
+            <!--<div class="leaflet-control-layers-base"></div>-->
+            <!--<div class="leaflet-control-layers-separator" style="display: none;"></div>-->
+            <!--<div class="leaflet-control-layers-overlays">-->
+              <!--<label><input type="checkbox" class="leaflet-control-layers-selector"><span> <i class="icon-bullseye"></i> GPS Tracks</span></label><label><input type="checkbox" class="leaflet-control-layers-selector" checked=""><span> <i class="icon-bell"></i> Virtual Fences</span></label></div></form></div><div class="leaflet-draw leaflet-control"><div class="leaflet-draw-section"><div class="leaflet-draw-toolbar leaflet-bar leaflet-draw-toolbar-top"><a class="leaflet-draw-draw-circle" href="#" title="Create a Virtual Fence!"></a></div><ul class="leaflet-draw-actions" style="width: 50px; top: -1px; display: none;"><li class=""><a class="" href="#" title="Cancel drawing">Cancel</a></li></ul></div><div class="leaflet-draw-section"><div class="leaflet-draw-toolbar leaflet-bar"><a class="leaflet-draw-edit-edit" href="#" title="Edit layers"></a><a class="leaflet-draw-edit-remove" href="#" title="Delete layers"></a></div><ul class="leaflet-draw-actions" style="width: 101px;"><li class=""><a class="" href="#" title="Save changes.">Save</a></li><li class=""><a class="" href="#" title="Cancel editing, discards all changes.">Cancel</a></li></ul></div></div></div>-->
+    </div>
+    <!--<div class="navbar navbar-fixed-bottom" style="position: absolute;">-->
+      <!--<div class="navbar-inner">-->
+        <!--<div class="container" style="width: auto; padding-left: 20px;">-->
+          <!--<a id="bottom-branding" class="brand" title="View Splash Screen" href="#"><i class="icon-leaf"></i> Leaflet Playback</a>-->
+          <!--<ul class="nav">-->
+            <!--<li class="btn">-->
+              <!--<a id="play-pause" href="#"><i id="play-pause-icon" class="icon-play icon-large"></i></a>-->
+            <!--</li>-->
+            <!--<li>-->
+              <!--<div id="time-slider"></div>-->
+            <!--</li>-->
+            <!--<li class="btn dropup">-->
+              <!--<a id="clock-btn" class="clock" data-toggle="dropdown" href="#">-->
+                <!--<span id="cursor-date"></span><br/>-->
+                <!--<span id="cursor-time"></span>-->
+              <!--</a>-->
+              <!--<div class="dropdown-menu" role="menu" aria-labelledby="clock-btn">-->
+                <!--<label>Playback Cursor Time</label>-->
+                <!--<div class="input-append bootstrap-timepicker">-->
+                  <!--<input id="timepicker" type="text" class="input-small span2">-->
+                  <!--<span class="add-on"><i class="icon-time"></i></span>-->
+                <!--</div>-->
+                <!--<div id="calendar"></div>-->
+                <!--<div class="input-append">-->
+                  <!--<input id="date-input" type="text" class="input-small">-->
+                  <!--<span class="add-on"><i class="icon-calendar"></i></span>-->
+                <!--</div>-->
+              <!--</div>-->
+            <!--</li>-->
+            <!--<li class="btn dropup">-->
+              <!--<a id="speed-btn" data-toggle="dropdown" href="#"><i class="icon-dashboard icon-large"></i> <span id="speed-icon-val" class="speed">1</span>x</a>-->
+              <!--<div class="speed-menu dropdown-menu" role="menu" aria-labelledby="speed-btn">-->
+                <!--<label>Playback<br/>Speed</label>-->
+                <!--<input id="speed-input" class="span1 speed" type="text" value="1" />-->
+                <!--<div id="speed-slider"></div>-->
+              <!--</div>-->
+            <!--</li>-->
+
+          <!--</ul>-->
+          <!--<ul class="nav pull-right">-->
+            <!--<li class="btn"><a id="view-all-fences-btn" href="#"><i class="icon-bell icon-large"></i> View All Fences</a></li>-->
+            <!--<li class="btn"><a id="load-tracks-btn" href="#"><i class="icon-file-alt icon-large"></i> Load Tracks</a></li>-->
+          <!--</ul>-->
+        <!--</div>-->
       <!--</div>-->
     <!--</div>-->
-  <!--</div>-->
-  <!--<input id="formula" value=""> </input>-->
-  <!--<div id="result"></div>-->
-  <!--<div id="map"></div>-->
+  </div>
 
+  <div class="navbar navbar-inverse navbar-fixed-bottom hidden" role="navigation">
+    <div class="container-fluid">
+      <div class="navbar-collapse collapse nav-footer col-xs-10">
+        <ul class="nav-footer">
+          <li class="col-xs-1">
+            <button type="button" class="btn btn-lg btn-default" id = "play-pause" title="Play"><span class="glyphicon glyphicon-play"></span></button>
+          </li>
+          <li class="col-xs-5">
+            <div id="time-slider"></div>
+          </li>
+          <li class="btn dropup col-xs-2">
+            <a id="clock-btn" class="clock" data-toggle="dropdown" href="#">
+              <span id="cursor-date"></span><br/>
+              <span id="cursor-time"></span>
+            </a>
+            <div class="dropdown-menu" role="menu" aria-labelledby="clock-btn">
+              <label>Playback Cursor Time</label>
+              <div class="input-append bootstrap-timepicker">
+                <input id="timepicker" type="text" class="input-small span2">
+                <span class="add-on"><i class="icon-time"></i></span>
+              </div>
+              <div id="calendar"></div>
+              <div class="input-append">
+                <input id="date-input" type="text" class="input-small">
+                <span class="add-on"><i class="icon-calendar"></i></span>
+              </div>
+            </div>
+          </li>
+          <li class="btn dropup col-xs-2">
+            <a id="speed-btn" data-toggle="dropdown" href="#"><i class="glyphicon glyphicon-dashboard"></i> <span id="speed-icon-val" class="speed">1</span>x</a>
+            <div class="speed-menu dropdown-menu" role="menu" aria-labelledby="speed-btn">
+              <label>Playback<br/>Speed</label>
+              <input id="speed-input" class="span1 speed" type="text" value="1" />
+              <div id="speed-slider"></div>
+            </div>
+          </li>
+        </ul>
+       </div>
+    </div>
+  </div>
+
+
+
+
+
+  <!--&lt;!&ndash; Modal &ndash;&gt;-->
+  <!--<div id="create-geotrigger-modal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="create-geotrigger-label" aria-hidden="true">-->
+    <!--<div class="modal-header">-->
+      <!--<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>-->
+      <!--<h3 id="create-geotrigger-label">Create GeoTrigger</h3>-->
+    <!--</div>-->
+    <!--<div class="modal-body">-->
+      <!--<label>Coordinates</label>-->
+      <!--<p>( <span id="new-trigger-lat"></span>, <span id="new-trigger-lng"></span> )</p>-->
+      <!--<label>Radius</label>-->
+      <!--<p><span id="new-trigger-radius"></span> meters</p>-->
+      <!--<label>Trigger Name</label>-->
+      <!--<input id="new-trigger-name" type="text" class="span5"\>-->
+      <!--<span class="help-block">Choose a name for your trigger. You may want to include the name of the location.</span>-->
+      <!--<label>Message</label>-->
+      <!--<textarea id="new-trigger-message" rows="6" class="span5"></textarea>-->
+      <!--<span class="help-block">Enter the message that the trigger will notify with. Any valid HTML will work.</span>-->
+    <!--</div>-->
+    <!--<div class="modal-footer">-->
+      <!--<button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>-->
+      <!--<button id="create-geotrigger-save" class="btn btn-primary">Save</button>-->
+    <!--</div>-->
+  <!--</div>-->
+
+
+  <!--<div id="load-tracks-modal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="load-tracks-label" aria-hidden="true">-->
+    <!--<div class="modal-header">-->
+      <!--<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>-->
+      <!--<h3 id="load-tracks-label">Load GPS Tracks</h3>-->
+    <!--</div>-->
+    <!--<div class="modal-body">-->
+      <!--<p>-->
+        <!--At the current moment, LeafletPlayback only supports GeoJSON files.-->
+      <!--</p>-->
+      <!--<label>Upload a File</label>-->
+
+      <!--<input type="file" id="load-tracks-file" />-->
+
+    <!--</div>-->
+    <!--<div class="modal-footer">-->
+      <!--<button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>-->
+      <!--<button id="load-tracks-save" class="btn btn-primary">Load</button>-->
+    <!--</div>-->
+  <!--</div>-->
+
+  <!--<div id="delete-modal" class="modal hide fade" tabindex="-1" role="dialog" aria-labelledby="delete-label" aria-hidden="true">-->
+    <!--<div class="modal-header">-->
+      <!--<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>-->
+      <!--<h3 id="delete-label">Delete Virtual Fence?</h3>-->
+    <!--</div>-->
+    <!--<div class="modal-body">-->
+      <!--<p>-->
+        <!--Are you sure?-->
+      <!--</p>-->
+
+    <!--</div>-->
+    <!--<div class="modal-footer">-->
+      <!--<button class="btn" data-dismiss="modal" aria-hidden="true">Cancel</button>-->
+      <!--<button id="delete-modal-btn" class="btn btn-danger">Delete</button>-->
+    <!--</div>-->
+  <!--</div>-->
+
+
+  <div class="modal fade" id="settingsModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-md">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button class="close" type="button" data-dismiss="modal" aria-hidden="true">&times;</button>
+          <div>
+          <i class="glyphicon glyphicon-cog settings-icon"></i>
+          <h4 class="modal-title" >Settings</h4>
+
+          </div>
+        </div>
+        <div class="modal-body">
+          <p>Change application's default settings </p>
+          <div class="panel panel-primary">
+            <div class="panel-heading settings-header">
+              <div class="col-xs-6">
+                <label>Features</label>
+              </div>
+              <div class="col-xs-2 settings-align">
+                <label>Units</label>
+              </div>
+              <div class="col-xs-4 settings-align">
+                <label>Value</label>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="col-xs-6 settings-label">
+                <label>Length</label>
+              </div>
+              <div class="col-xs-2 settings-label settings-align">
+                <label>m</label>
+              </div>
+              <div class="col-xs-4">
+                <div class="input-group">
+                  <span class="input-group-btn"><button type="button" class="btn btn-default btn-number" data-type="minus" data-field="length"><span class="glyphicon glyphicon-minus"></span></button></span>
+                  <input type="text" name="length" class="form-control input-number" min="1" max="99999">
+                  <span class="input-group-btn"><button type="button" class="btn btn-default btn-number" data-type="plus" data-field="length"><span class="glyphicon glyphicon-plus"></span></button></span>
+                </div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="col-xs-6 settings-label">
+                <label>Speed</label>
+              </div>
+              <div class="col-xs-2 settings-label settings-align">
+                <label>km/h</label>
+              </div>
+              <div class="col-xs-4">
+                <div class="input-group">
+                  <span class="input-group-btn"><button type="button" class="btn btn-default btn-number" data-type="minus" data-field="speed"><span class="glyphicon glyphicon-minus"></span></button></span>
+                  <input type="text" name="speed" class="form-control input-number" min="1" max="999">
+                  <span class="input-group-btn"><button type="button" class="btn btn-default btn-number" data-type="plus" data-field="speed"><span class="glyphicon glyphicon-plus"></span></button></span>
+                </div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="col-xs-6 settings-label">
+                <label>Ready time</label>
+              </div>
+              <div class="col-xs-2 settings-label settings-align">
+                <label>h</label>
+              </div>
+              <div class="col-xs-4">
+                <div class="input-group">
+                  <span class="input-group-btn"><button type="button" class="btn btn-default btn-number" data-type="minus" data-field="ready"><span class="glyphicon glyphicon-minus"></span></button></span>
+                  <input type="text" name="ready" class="form-control input-number" min="0" max="99">
+                  <span class="input-group-btn"><button type="button" class="btn btn-default btn-number" data-type="plus" data-field="ready"><span class="glyphicon glyphicon-plus"></span></button></span>
+                </div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="col-xs-6 settings-label">
+                <label>Due time</label>
+              </div>
+              <div class="col-xs-2 settings-label settings-align">
+                <label>h</label>
+              </div>
+              <div class="col-xs-4">
+                <div class="input-group">
+                  <span class="input-group-btn"><button type="button" class="btn btn-default btn-number" data-type="minus" data-field="due"><span class="glyphicon glyphicon-minus"></span></button></span>
+                  <input type="text" name="due" class="form-control input-number" min="1" max="99">
+                  <span class="input-group-btn"><button type="button" class="btn btn-default btn-number" data-type="plus" data-field="due"><span class="glyphicon glyphicon-plus"></span></button></span>
+                </div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="col-xs-6 settings-label">
+                <label>Headway</label>
+              </div>
+              <div class="col-xs-2 settings-label settings-align">
+                <label>min</label>
+              </div>
+              <div class="col-xs-4">
+                <div class="input-group">
+                  <span class="input-group-btn"><button type="button" class="btn btn-default btn-number" data-type="minus" data-field="headway"><span class="glyphicon glyphicon-minus"></span></button></span>
+                  <input type="text" name="headway" class="form-control input-number" min="1" max="99">
+                  <span class="input-group-btn"><button type="button" class="btn btn-default btn-number" data-type="plus" data-field="headway"><span class="glyphicon glyphicon-plus"></span></button></span>
+                </div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="col-xs-6 settings-label">
+                <label>Time</label>
+              </div>
+              <div class="col-xs-2 settings-label settings-align">
+                <label></label>
+              </div>
+              <div class="col-xs-4">
+                <div class="input-group">
+                  <span class="input-group-btn"><button type="button" class="btn btn-default btn-number" data-type="minus" data-field="time"><span class="glyphicon glyphicon-minus"></span></button></span>
+                  <input type="text" name="time" class="form-control input-number" min="1" max="99">
+                  <span class="input-group-btn"><button type="button" class="btn btn-default btn-number" data-type="plus" data-field="time"><span class="glyphicon glyphicon-plus"></span></button></span>
+                </div>
+              </div>
+            </div>
+            <div class="settings-row">
+              <div class="col-xs-6 settings-label">
+                <label>Algorithm</label>
+              </div>
+              <div class="col-xs-2 settings-label settings-align">
+                <label></label>
+              </div>
+              <div class="col-xs-4">
+                <div class="input-group">
+                  <span class="input-group-btn"><button type="button" class="btn btn-default btn-number" data-type="minus" data-field="algorithm"><span class="glyphicon glyphicon-minus"></span></button></span>
+                  <input type="text" name="algorithm" class="form-control input-number" min="1" max="99">
+                  <span class="input-group-btn"><button type="button" class="btn btn-default btn-number" data-type="plus" data-field="algorithm"><span class="glyphicon glyphicon-plus"></span></button></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+          <!--<div class="tab-content" id="aboutTabsContent">-->
+            <!--<div class="tab-pane fade active in" id="about">-->
+              <!--<p>A simple, responsive template for building web mapping applications with <a href="http://getbootstrap.com/">Bootstrap 3</a>, <a href="http://leafletjs.com/" target="_blank">Leaflet</a>, and <a href="http://twitter.github.io/typeahead.js/" target="_blank">typeahead.js</a>. Open source, MIT licensed, and available on <a href="https://github.com/bmcbride/bootleaf" target="_blank">GitHub</a>.</p>-->
+              <!--<div class="panel panel-primary">-->
+                <!--<div class="panel-heading">Features</div>-->
+                <!--<ul class="list-group">-->
+                  <!--<li class="list-group-item">Fullscreen mobile-friendly map template with responsive navbar and modal placeholders</li>-->
+                  <!--<li class="list-group-item">jQuery loading of external GeoJSON files</li>-->
+                  <!--<li class="list-group-item">Logical multiple layer marker clustering via the <a href="https://github.com/Leaflet/Leaflet.markercluster" target="_blank">leaflet marker cluster plugin</a></li>-->
+                  <!--<li class="list-group-item">Elegant client-side multi-layer feature search with autocomplete using <a href="http://twitter.github.io/typeahead.js/" target="_blank">typeahead.js</a></li>-->
+                  <!--<li class="list-group-item">Responsive sidebar feature list synced with map bounds, which includes sorting and filtering via <a href="http://listjs.com/" target="_blank">list.js</a></li>-->
+                  <!--<li class="list-group-item">Marker icons included in grouped layer control via the <a href="https://github.com/ismyrnow/Leaflet.groupedlayercontrol" target="_blank">grouped layer control plugin</a></li>-->
+                <!--</ul>-->
+              <!--</div>-->
+            <!--</div>-->
+            <!--<div class="tab-pane fade" id="contact">-->
+              <!--<form id="contact-form">-->
+                <!--<div class="well well-sm">-->
+                  <!--<div class="row">-->
+                    <!--<div class="col-md-4">-->
+                      <!--<div class="form-group">-->
+                        <!--<label for="first-name">First Name:</label>-->
+                        <!--<input type="text" class="form-control" id="first-name">-->
+                      <!--</div>-->
+                      <!--<div class="form-group">-->
+                        <!--<label for="last-name">Last Name:</label>-->
+                        <!--<input type="text" class="form-control" id="last-email">-->
+                      <!--</div>-->
+                      <!--<div class="form-group">-->
+                        <!--<label for="email">Email:</label>-->
+                        <!--<input type="text" class="form-control" id="email">-->
+                      <!--</div>-->
+                    <!--</div>-->
+                    <!--<div class="col-md-8">-->
+                      <!--<label for="message">Message:</label>-->
+                      <!--<textarea class="form-control" rows="8" id="message"></textarea>-->
+                    <!--</div>-->
+                    <!--<div class="col-md-12">-->
+                      <!--<p>-->
+                        <!--<button type="submit" class="btn btn-primary pull-right" data-dismiss="modal">Submit</button>-->
+                      <!--</p>-->
+                    <!--</div>-->
+                  <!--</div>-->
+                <!--</div>-->
+              <!--</form>-->
+            <!--</div>-->
+          <!--</div>-->
+        <!--</div>-->
+        <div class="modal-footer">
+          <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+      </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+  </div><!-- /.modal -->
 
   <div class="modal fade" id="aboutModal" tabindex="-1" role="dialog">
     <div class="modal-dialog modal-lg">
