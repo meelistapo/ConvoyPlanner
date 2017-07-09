@@ -16,11 +16,11 @@ const endpoints = require('./endpoints');
 const roads = require('./roads');
 const tracks = require('./tracks');
 const datetime = require('eonasdan-bootstrap-datetimepicker');
-let defaultValues = {'length':5000,'speed':50, 'ready': 0, 'due':24, 'headway':5, 'time': 'current','algorithm':'Branch and bound', 'playback':100};
+let defaultValues = {'length':5000,'speed':50, 'ready': 0, 'due':24, 'headway':5, 'time': 'current','algorithm':'Branch and bound', 'playback':1000};
 let convoys = {};
 let mapObjects = {};
 let paths = {};
-let convoyID = 1;
+let convoyID = 0;
 let colorIdx = 0;
 let colors = ['darkpurple', 'orange', 'darkblue', 'green','red' ,  'black',  'purple',  'blue',  'darkred', 'lightgreen', 'cadetblue',  'pink', 'darkgreen', 'lightred', 'gray', 'beige',  'lightblue', 'lightgray'];
 let hex = {'red': '#D33D2A','darkred':'#A03336', 'lightred':'#FF8D7E', 'orange':'#F49630', 'beige':'#FFCA91', 'green':'#71AF26', 'darkgreen':'#718224', 'lightgreen':'#BBF770', 'blue':'#38A9DB', 'darkblue':'#0065A0', 'lightblue':'#89DBFF', 'purple':'#D051B8', 'darkpurple':'#593869', 'pink':'#FF90E9', 'cadetblue':'#426877', 'gray':'#575757', 'lightgray':'#A3A3A3', 'black':'#303030'};
@@ -81,20 +81,19 @@ function init_video(tracks) {
 }
 
 function start(startTime, path, color, duration, passingTime){
-    let counter = 0;
-    // console.log(startTime, duration, passingTime);
-    if (counter == startTime) {
-        // console.log(counter);
+    if (startTime == 0) {
         drawPath(L.polyline(path), color, duration, passingTime);
         return false
     }
-    setInterval(function () {
-        counter+=1;
-        if (counter == startTime) {
+    let start = +new Date
+    let interval = setInterval(function () {
+        let time = (new Date - start)
+        if (time >= startTime) {
             drawPath(L.polyline(path), color, duration, passingTime);
-            return false
+            clearInterval(interval);
         }
-    }, 1);
+    }, 0);
+    return false
 }
 
 $(function () {
@@ -121,9 +120,9 @@ $(function () {
 
     let playback = new L.Playback(map, demoTracks, clockCallback);
 
-    map.on('click', function(e) {
-        console.log(e.latlng.toString());
-    });
+    // map.on('click', function(e) {
+    //     console.log(e.latlng.toString());
+    // });
 
 
     let isPlaying = false;
@@ -349,36 +348,18 @@ $(function () {
     // });
 
     // insert default values to settings
-    $("input[name=headway]").val(defaultValues['headway']);
-    $("input[name=length]").val(defaultValues['length']);
-    $("input[name=speed]").val(defaultValues['speed']);
-    $("input[name=ready]").val(defaultValues['ready']);
-    $("input[name=due]").val(defaultValues['due']);
-    $("input[name=time]").val(defaultValues['time']);
-    $("input[name=algorithm]").val(defaultValues['algorithm']);
-
+    $("input[name=default_headway]").val(defaultValues['headway']);
+    $("input[name=default_length]").val(defaultValues['length']);
+    $("input[name=default_speed]").val(defaultValues['speed']);
+    $("input[name=default_ready]").val(defaultValues['ready']);
+    $("input[name=default_due]").val(defaultValues['due']);
+    $("input[name=default_time]").val(defaultValues['time']);
+    $("input[name=default_algorithm]").val(defaultValues['algorithm']);
 
     $('#add-btn').click(function () {
-        let row = '<tr id="row_' + convoyID +'"><td><button type="button" class="nr btn btn-lg btn-default id" id="ID_' + convoyID +'" title="Convoy ID"></td>' +
-            '<td><button type="button" class="btn btn-lg btn-default" id = "origin_' + convoyID+'" title="Add origin"><span class="glyphicon glyphicon-play"></span></button></td>' +
-            '<td><button type="button" class="btn btn-lg btn-default" id = "destination_' + convoyID+'" title="Add destination"><span class="glyphicon glyphicon-stop"></button></td>' +
-            '<td><input type="number" min="1" class="input center merge-bottom-input plus-minus" value = "'+ defaultValues['length'] +'" id = "length_' + convoyID+'"><div class="btn-group btn-block" role="group" aria-label="plus-minus">' +
-            '<button type="button" class="btn btn-xs btn-default minus-button merge-top-left-button" id = "length-_' + convoyID+'"><span class="glyphicon glyphicon-minus"></span></button>' +
-            '<button type="button" class="btn btn-xs btn-basic plus-button merge-top-right-button" id = "length+_' + convoyID+'"><span class="glyphicon glyphicon-plus"></span></button></div></td>' +
-            '<td><input type="number" min="1" class="input center merge-bottom-input plus-minus" value = "'+ defaultValues['speed'] +'" id = "speed_' + convoyID+'"><div class="btn-group btn-block" role="group" aria-label="plus-minus">' +
-            '<button type="button" class="btn btn-xs btn-default minus-button merge-top-left-button" id = "speed-_' + convoyID+'"><span class="glyphicon glyphicon-minus"></span></button>' +
-            '<button type="button" class="btn btn-xs btn-basic plus-button merge-top-right-button" id = "speed+_' + convoyID+'"><span class="glyphicon glyphicon-plus"></span></button></div></td>' +
-            '<td><input type="number" min="0" class="input center merge-bottom-input plus-minus" value = "'+ defaultValues['ready'] +'" id = "ready_' + convoyID+'"><div class="btn-group btn-block" role="group" aria-label="plus-minus">' +
-            '<button type="button" class="btn btn-xs btn-default minus-button merge-top-left-button" id = "ready-_' + convoyID+'"><span class="glyphicon glyphicon-minus"></span></button>' +
-            '<button type="button" class="btn btn-xs btn-basic plus-button merge-top-right-button" id = "ready+_' + convoyID+'"><span class="glyphicon glyphicon-plus"></span></button></div></td>' +
-            '<td><input type="number" min="1" class="input center merge-bottom-input plus-minus" value = "'+ defaultValues['due'] +'" id = "due_' + convoyID+'"><div class="btn-group btn-block" role="group" aria-label="plus-minus">' +
-            '<button type="button" class="btn btn-xs btn-default minus-button merge-top-left-button" id = "due-_' + convoyID+'"><span class="glyphicon glyphicon-minus"></span></button>' +
-            '<button type="button" class="btn btn-xs btn-basic plus-button merge-top-right-button" id = "due+_' + convoyID+'"><span class="glyphicon glyphicon-plus"></span></button></div></td>' +
-            '<td><button type="button" class="btn btn-lg btn-danger" id = "delete_' + convoyID+'" title="Delete row"><span class="glyphicon glyphicon-minus"></span></td></tr>';
-        let table = $('#convoy-list');
-        table.find('thead').removeClass("hidden");
-        table.append(row);
-        $('#ID_' + convoyID).text(convoyID+'.');
+        convoyID++;
+        addConvoy(convoyID);
+
         convoys[convoyID]= {};
         convoys[convoyID]['length']= defaultValues['length'];
         convoys[convoyID]['speed']= defaultValues['speed'];
@@ -386,7 +367,16 @@ $(function () {
         convoys[convoyID]['due']= defaultValues['due'];
         mapObjects[convoyID]= [];
 
+        $('.modify').click(function(){
+            modifyNumbers(this, convoyID);
+        });
 
+        $('.input-number').focusin(function(){
+            $(this).data('oldValue', $(this).val());
+        });
+        $('.input-number').change(function() {
+            modifyInput(this, convoyID);
+        });
 
         $("#origin_" + convoyID +",#destination_" + convoyID).each(function() {
             $(this).click(function () {
@@ -458,69 +448,6 @@ $(function () {
             }
             convoyID--;
         });
-
-
-
-        $('.plus-minus').on('input', function() {
-            let parts = this.id.split('_');
-            let feature = parts[0];
-            let id = parts[1];
-            let oldValue = convoys[id][feature];
-            if (isNaN(parseInt($(this).val()))){
-                $(this).val(oldValue);
-            }
-            else if (feature == 'ready'){
-                if (parseInt($(this).val()) < 0) {
-                    $(this).val(oldValue);
-                }
-                else{
-                    convoys[id][feature]=parseInt($(this).val());
-                }
-            }
-            else {
-                if (parseInt($(this).val()) <= 0) {
-                    $(this).val(oldValue);
-                }
-                else{
-                    convoys[id][feature]=parseInt($(this).val());
-                }
-            }
-        });
-
-        $('.minus-button').click( (e) => {
-            let currentInput = $(e.currentTarget).parent().prev()[0];
-            let minusInputValue = $(currentInput).val();
-            let parts = currentInput.id.split('_');
-            let feature = parts[0];
-            let id = parts[1];
-            if (feature == 'ready') {
-                if (minusInputValue > 0) {
-                    minusInputValue--;
-                    $(currentInput).val(minusInputValue);
-                    convoys[id][feature] = minusInputValue;
-                }
-            }
-            else{
-                if (minusInputValue > 1) {
-                    minusInputValue--;
-                    $(currentInput).val(minusInputValue);
-                    convoys[id][feature] = minusInputValue;
-                }
-            }
-        });
-
-        $('.plus-button').click( (e) => {
-            let currentInput = $(e.currentTarget).parent().prev()[0];
-            let plusInputValue = $(currentInput).val();
-            let parts = currentInput.id.split('_');
-            let feature = parts[0];
-            let id = parts[1];
-            plusInputValue++;
-            $(currentInput).val(plusInputValue);
-            convoys[id][feature] = plusInputValue;
-        });
-
-        convoyID++;
     });
 
 
@@ -541,23 +468,25 @@ $(function () {
             $('#run-btn').removeClass("hidden");
             $('.navbar-fixed-bottom').removeClass("hidden");
             $('.sidebar-table').css('top','180px');
-            let data = result[1]
-            for (let convoyID in data) {
-                // console.log(data[convoyID]);
-                let path = constructPath(data[convoyID][0]);
-                paths[convoyID] = path;
-            }
-            console.log(paths)
-
         });
     });
 
 });
 
 $('#run-btn').click(function () {
-   animateSidebar();
+    animateSidebar();
+
+    Object.keys(data).sort().forEach(function(v, i) {
+            console.log(v, data[v], i);
+        });
+
+
     let startOrder = result[0];
     let data = result[1];
+    for (let convoyID in data) {
+        let path = constructPath(data[convoyID][0]);
+        paths[convoyID] = path;
+    }
 
     let currentTime = 0;
     for (let i = 0; i < startOrder.length; i++) {
@@ -572,9 +501,12 @@ $('#run-btn').click(function () {
         let color = hex[mapObjects[convoyID]['color']];
         let passingTime = ((convoys[convoyID]['length']/1000)/convoys[convoyID]['speed'])*3600000/defaultValues['playback'];
         start(runningStartTime, path, color, duration, passingTime);
-
-
     }
+
+
+
+
+
     // for (let convoyID in result) {
     //     let data = result[convoyID];
 
@@ -593,64 +525,93 @@ $('#run-btn').click(function () {
 });
 
 
+function addConvoy(convoyID){
+    let row = '<tr name = "length" id="row_' + convoyID +'"><td><button type="button" class="nr btn btn-lg btn-default id" id="ID_' + convoyID +'" title="Convoy ID"></td>' +
+        '<td><button type="button" class="btn btn-lg btn-default" id = "origin_' + convoyID+'" title="Add origin"><span class="glyphicon glyphicon-play"></span></button></td>' +
+        '<td><button type="button" class="btn btn-lg btn-default" id = "destination_' + convoyID+'" title="Add destination"><span class="glyphicon glyphicon-stop"></button></td>' +
+        '<td>' +
+        '<input type="number"  name = "length" min="1" max="99999" value = "'+ defaultValues['length'] +'" class="input center merge-bottom-input input-number convoy-input"><div class="btn-group btn-block">' +
+        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify" data-type="minus" data-field="length"><span class="glyphicon glyphicon-minus"></span></button>' +
+        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify" data-type="plus" data-field="length"><span class="glyphicon glyphicon-plus"></span></button></div>' +
+        '</td>' +
+        '<td>' +
+        '<input type="number" name = "speed" min="1"   max=  "999" value = "'+ defaultValues['speed'] +'" class="input center merge-bottom-input input-number convoy-input"><div class="btn-group btn-block">' +
+        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify" data-type="minus" data-field="speed"><span class="glyphicon glyphicon-minus"></span></button>' +
+        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify" data-type="plus" data-field="speed"><span class="glyphicon glyphicon-plus"></span></button></div>' +
+        '</td>' +
+        '<td>' +
+        '<input type="number" name = "ready" min="0"   max=  "99" value = "'+ defaultValues['ready'] +'" class="input center merge-bottom-input input-number convoy-input"><div class="btn-group btn-block">' +
+        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify" data-type="minus" data-field="ready"><span class="glyphicon glyphicon-minus"></span></button>' +
+        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify" data-type="plus" data-field="ready"><span class="glyphicon glyphicon-plus"></span></button></div>' +
+        '</td>' +
+        '<td>' +
+        '<input type="number" name = "due" min="1"   max=  "99" value = "'+ defaultValues['due'] +'" class="input center merge-bottom-input input-number convoy-input"><div class="btn-group btn-block">' +
+        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify" data-type="minus" data-field="due"><span class="glyphicon glyphicon-minus"></span></button>' +
+        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify" data-type="plus" data-field="due"><span class="glyphicon glyphicon-plus"></span></button></div>' +
+        '</td>' +
+        '<td><button type="button" class="btn btn-lg btn-danger" id = "delete_' + convoyID+'" title="Delete row"><span class="glyphicon glyphicon-minus"></span></td></tr>';
+    let table = $('#convoy-list');
+    table.find('thead').removeClass("hidden");
+    table.append(row);
+    $('#ID_' + convoyID).text(convoyID+'.');
+}
 
 
 
-$('.btn-number').click(function(e){
-    e.preventDefault();
-    let fieldName = $(this).attr('data-field');
-    let type      = $(this).attr('data-type');
+function modifyNumbers(button, convoyID){
+    let fieldName = $(button).attr('data-field');
+    let type      = $(button).attr('data-type');
     let input = $("input[name='"+fieldName+"']");
     let currentVal = parseInt(input.val());
     if (!isNaN(currentVal)) {
         if(type == 'minus') {
             if(currentVal > input.attr('min')) {
                 input.val(currentVal - 1).change();
-                defaultValues[fieldName] = currentVal-1
+                changeValue(fieldName, convoyID, input.val())
             }
             if(parseInt(input.val()) == input.attr('min')) {
-                $(this).attr('disabled', true);
+                $(button).attr('disabled', true);
             }
 
         } else if(type == 'plus') {
             if(currentVal < input.attr('max')) {
                 input.val(currentVal + 1).change();
-                defaultValues[fieldName] = currentVal+1
+                changeValue(fieldName, convoyID, input.val());
             }
             if(parseInt(input.val()) == input.attr('max')) {
-                $(this).attr('disabled', true);
+                $(button).attr('disabled', true);
             }
 
         }
     } else {
         input.val(0);
     }
-});
-$('.input-number').focusin(function(){
-    $(this).data('oldValue', $(this).val());
-});
-$('.input-number').change(function() {
+}
 
-    let minValue =  parseInt($(this).attr('min'));
-    let maxValue =  parseInt($(this).attr('max'));
-    let valueCurrent = parseInt($(this).val());
-
-    let name = $(this).attr('name');
-    if(valueCurrent >= minValue) {
-        $(".btn-number[data-type='minus'][data-field='"+name+"']").removeAttr('disabled')
+function modifyInput(input, convoyID){
+    input = $(input)
+    let minValue =  parseInt(input.attr('min'));
+    let maxValue =  parseInt(input.attr('max'));
+    let valueCurrent = parseInt(input.val());
+    let fieldName = input.attr('name');
+    if(valueCurrent >= minValue && valueCurrent <= maxValue) {
+        $(".modify[data-type='minus'][data-field='"+fieldName+"']").removeAttr('disabled')
+        $(".modify[data-type='plus'][data-field='"+fieldName+"']").removeAttr('disabled')
+        changeValue(fieldName, convoyID, input.val());
     } else {
-        // alert('Sorry, the minimum value was reached');
-        $(this).val($(this).data('oldValue'));
+        input.val(input.data('oldValue'));
     }
-    if(valueCurrent <= maxValue) {
-        $(".btn-number[data-type='plus'][data-field='"+name+"']").removeAttr('disabled')
-    } else {
-        // alert('Sorry, the maximum value was reached');
-        $(this).val($(this).data('oldValue'));
-    }
-});
+}
 
 
+function changeValue(fieldName, convoyID, value){
+    if(fieldName.startsWith('default')){
+        defaultValues[fieldName] = value;
+    }
+    else{
+        convoys[convoyID][fieldName] = value
+    }
+}
 
 
 
@@ -926,10 +887,6 @@ function updateConvoys(ID, feature, nearest){
             $('.sidebar-table').css('top', '140px');
         }
         $($('#row_' + ID)[0].firstChild.firstChild).css({'background-color': hex[mapObjects[ID]['color']], 'color':'white'});
-
-
-
-
     }
 }
 
@@ -956,25 +913,6 @@ function constructPath(pathNodes){
 
 
 
-//
-// function addMarker(e){
-// // Add marker to map at click location; add popup window
-//     var newMarker = new L.marker(e.latlng).addTo(map);
-// }
-
-// var marker3 = new L.Marker(nodes[3816],{icon:  greenIcon }).addTo(map);
-// var marker4 = new L.Marker([59.1015405890164,27.205910446717013]).addTo(map);
-// var marker5 = new L.Marker([58.777626294311425,27.205910446717013]).addTo(map);
-
-// var marker6 = new L.Marker([58.96035818220546,26.813663286303196]).addTo(map);
-// var marker7 = new L.Marker([58.94983166771614,26.71734877335933]).addTo(map);
-
-// var myMovingMarker = L.Marker.movingMarker([[58.7764,25.1305],[59.3975,27.355]],
-// 						[20000]).addTo(map);
-// //...
-// myMovingMarker.start();
-
-// L.rectangle(bounds, {color: "#ff7800", weight: 1}).addTo(map);
 
 
 function clockCallback(ms) {

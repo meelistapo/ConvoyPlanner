@@ -15,13 +15,14 @@ client.invoke("echo", "server ready", (error, res) => {
 
 
 function getPaths(data, callback) {
+        console.log(data)
         client.invoke("generatePaths", data, (error, result) => {
         if(error) {
             console.error(error);
         }
         else {
             console.log(result);
-            callback(result);
+            callback(result.textContent);
         }
     })
 }
