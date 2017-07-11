@@ -4,7 +4,7 @@ html, body, #container {
     overflow: hidden;
 }
 body {
-    padding-top: 50px;
+    padding-top: 100px;
 }
 input[type="radio"], input[type="checkbox"] {
     margin: 0;
@@ -117,8 +117,7 @@ td {
 .statbar-table {
     position: absolute;
     width: 100%;
-    top: 140px;
-    bottom: 0px;
+    top: 40px;
     overflow: auto;
     padding-left: 10px;
     padding-right: 10px;
@@ -143,6 +142,21 @@ td {
 .table {
     margin-bottom: 0px;
 }
+
+.nav2 {
+    margin-top: 50px;
+    /*height:180px !important*/
+    /*height: 180px;*/
+}
+
+.stat-row{
+    width: 100%
+}
+
+.navbar-toggle-btn{
+    float: right;
+}
+
 .navbar .navbar-brand {
     font-weight: bold;
     font-size: 25px;
@@ -161,49 +175,17 @@ td {
 .navbar-header a.navbar-icon {
     margin-left: 25px;
 }
-.typeahead {
-    background-color: #FFFFFF;
+
+
+#add-point-btn{
+    width: 200px;
+    margin:auto;
+    display:block;
+    /*margin-left: 50px;*/
+    /*margin-right: 50px;*/
 }
-.tt-dropdown-menu {
-    background-color: #FFFFFF;
-    border: 1px solid rgba(0, 0, 0, 0.2);
-    border-radius: 4px 4px 4px 4px;
-    box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
-    margin-top: 4px;
-    padding: 4px 0;
-    width: 100%;
-    max-height: 300px;
-    overflow: auto;
-}
-.tt-suggestion {
-    font-size: 14px;
-    line-height: 20px;
-    padding: 3px 10px;
-}
-.tt-suggestion.tt-cursor {
-    background-color: #0097CF;
-    color: #FFFFFF;
-    cursor: pointer;
-}
-.tt-suggestion p {
-    margin: 0;
-}
-.tt-suggestion + .tt-suggestion {
-    border-top: 1px solid #ccc;
-}
-.typeahead-header {
-    margin: 0 5px 5px 5px;
-    padding: 3px 0;
-    border-bottom: 2px solid #333;
-}
-.has-feedback .form-control-feedback {
-    position: absolute;
-    top: 0;
-    right: 0;
-    display: block;
-    width: 34px;
-    height: 34px;
-    line-height: 34px;
+
+.wrapper {
     text-align: center;
 }
 
@@ -229,42 +211,17 @@ input[type=number]::-webkit-outer-spin-button {
 }
 
 .stat-table-header {
-    padding: 2px !important;
-    font-size: 12px !important;
+    /*padding: 2px !important;*/
+    /*font-size: 12px !important;*/
     text-align: center;
+}
+
+.stat-cell{
+    width: 50px;
 }
 
 #calc-btn, #run-btn{
     margin-bottom: 5px !important;
-}
-
-@media (max-width: 992px) {
-    .navbar .navbar-brand {
-        font-size: 18px;
-    }
-}
-@media (max-width: 767px){
-    #sidebar {
-        display: none;
-    }
-    .url-break {
-        word-break: break-all;
-        word-break: break-word;
-        -webkit-hyphens: auto;
-        hyphens: auto;
-    }
-    .dropdown-menu a i{
-        color: #FFFFFF;
-    }
-}
-/* Print Handling */
-@media print {
-    .navbar {
-        display: none !important;
-    }
-    .leaflet-control-container {
-        display: none !important;
-    }
 }
 
 

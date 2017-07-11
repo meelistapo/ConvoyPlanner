@@ -23,12 +23,12 @@
 <script type="text/javascript" src="renderer.js"></script>
 
 
-<script src="src/Util.js"></script>
-<script src="src/MoveableMarker.js"></script>
-<script src="src/TickPoint.js"></script>
-<script src="src/Tick.js"></script>
-<script src="src/Clock.js"></script>
-<script src="src/Playback.js"></script>
+<!--<script src="src/Util.js"></script>-->
+<!--<script src="src/MoveableMarker.js"></script>-->
+<!--<script src="src/TickPoint.js"></script>-->
+<!--<script src="src/Tick.js"></script>-->
+<!--<script src="src/Clock.js"></script>-->
+<!--<script src="src/Playback.js"></script>-->
 
 
 
@@ -50,21 +50,36 @@
           <li><a href="#" data-toggle="collapse" data-target=".navbar-collapse.in" id="stat-menu"><i class="fa fa-list-alt"></i>&nbsp;&nbsp;Statistics</a></li>
           <li><a href="#" data-toggle="collapse" data-target=".navbar-collapse.in" id="about-btn"><i class="fa fa-question-circle white"></i>&nbsp;&nbsp;About</a></li>
         </ul>
-        <!--<div class='col-xs-3'>-->
-          <!--<div class="navbar-form">-->
-            <!--<div class='input-group date' id='datetimepicker'>-->
-              <!--<input type='text' class="form-control" />-->
-              <!--<span class="input-group-addon">-->
-                    <!--<span class="glyphicon glyphicon-calendar"></span>-->
-                <!--</span>-->
-            <!--</div>-->
-          <!--</div>-->
-        <!--</div>-->
-
-
       </div><!--/.navbar-collapse -->
     </div>
   </div>
+  <div class="nav2 navbar navbar-fixed-top" role="navigation">
+    <div class="container-fluid">
+      <div class="navbar-collapse collapse">
+        <div class="panel-heading">
+          <button type="button" class="btn btn-xs btn-default pull-up navbar-toggle-btn"><i class="glyphicon glyphicon-chevron-up"></i></button>
+        </div>
+        <div class="statbar-table">
+          <table id="stat-list">
+            <thead >
+              <tr class='stat-table-header'>
+                <th></th>
+                <th>ID</th>
+                <th>Start time</th>
+                <th>Finish time</th>
+                <th>Travel time</th>
+                <th>Pass time</th>
+              </tr>
+            </thead>
+          </table>
+        </div><!--/.navbar-collapse -->
+        <div class = "wrapper">
+          <button type="button" class="btn btn-md btn-block" id="add-point-btn"><i></i>Add a checkpoint</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
 
   <div id="container">
     <div id="sidebar">
@@ -88,7 +103,7 @@
           <div class="sidebar-table">
             <table class="table table-hover" id="convoy-list">
               <thead class = "hidden">
-                <tr>
+                <tr class="stat-row">
                   <th class='table-header'>ID</th>
                   <th class='table-header'>Start</th>
                   <th class='table-header'>Destination</th>
@@ -103,33 +118,33 @@
           </div>
         </div>
       </div>
-      <div class="statbar-wrapper hidden">
-        <div class="panel panel-default">
-          <div class="panel-heading">
-            <h3 class="panel-title">Statistcs
-              <button type="button" class="btn btn-xs btn-default pull-right sidebar-toggle-btn"><i class="glyphicon glyphicon-chevron-left"></i></button></h3>
-          </div>
-          <div class="panel-body">
-            <div>
-              <button type="button" class="btn btn-md btn-block" id="add-point-btn"><i></i>Add a checkpoint</button>
-            </div>
-          </div>
-          <div class="statbar-table">
-            <table class="table table-hover" id="stat-list">
-              <thead>
-              <tr class='stat-table-header'>
-                <th></th>
-                <th>ID</th>
-                <th>Start time</th>
-                <th>Finish time</th>
-                <th>Travel time</th>
-                <th>Pass time</th>
-              </tr>
-              </thead>
-            </table>
-          </div>
-        </div>
-      </div>
+      <!--<div class="statbar-wrapper hidden">-->
+        <!--<div class="panel panel-default">-->
+          <!--<div class="panel-heading">-->
+            <!--<h3 class="panel-title">Statistcs-->
+              <!--<button type="button" class="btn btn-xs btn-default pull-right sidebar-toggle-btn"><i class="glyphicon glyphicon-chevron-left"></i></button></h3>-->
+          <!--</div>-->
+          <!--<div class="panel-body">-->
+            <!--<div>-->
+              <!--<button type="button" class="btn btn-md btn-block" id="add-point-btn"><i></i>Add a checkpoint</button>-->
+            <!--</div>-->
+          <!--</div>-->
+          <!--<div class="statbar-table">-->
+            <!--<table class="table table-hover" id="stat-list">-->
+              <!--<thead>-->
+              <!--<tr class='stat-table-header'>-->
+                <!--<th></th>-->
+                <!--<th>ID</th>-->
+                <!--<th>Start time</th>-->
+                <!--<th>Finish time</th>-->
+                <!--<th>Travel time</th>-->
+                <!--<th>Pass time</th>-->
+              <!--</tr>-->
+              <!--</thead>-->
+            <!--</table>-->
+          <!--</div>-->
+        <!--</div>-->
+      <!--</div>-->
     </div>
     <!--<div id="statbar">-->
 
