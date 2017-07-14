@@ -15,7 +15,7 @@ const endpoints = require('./endpoints');
 const roads = require('./roads');
 const tracks = require('./tracks');
 require('eonasdan-bootstrap-datetimepicker');
-let defaultValues = {'length':5000,'speed':50, 'ready': 0, 'due':24, 'headway':5, 'time': 'current','algorithm':'Branch and bound', 'playback':1000};
+let defaultValues = {'length':5000,'speed':50, 'ready': 0, 'due':24, 'headway':5, 'time': 'current','algorithm':'naive', 'playback':1000};
 let convoys = {};
 let mapObjects = {};
 let paths = {};
@@ -25,6 +25,7 @@ let convoyID = 0;
 let colorIdx = 0;
 let colors = ['darkpurple', 'orange', 'darkblue', 'green', 'red',  'black',  'purple',  'blue',  'darkred', 'lightgreen', 'cadetblue',  'pink', 'darkgreen', 'lightred', 'gray', 'beige',  'lightblue', 'lightgray'];
 let hex = {'red': '#D33D2A','darkred':'#A03336', 'lightred':'#FF8D7E', 'orange':'#F49630', 'beige':'#FFCA91', 'green':'#71AF26', 'darkgreen':'#718224', 'lightgreen':'#BBF770', 'blue':'#38A9DB', 'darkblue':'#0065A0', 'lightblue':'#89DBFF', 'purple':'#D051B8', 'darkpurple':'#593869', 'pink':'#FF90E9', 'cadetblue':'#426877', 'gray':'#575757', 'lightgray':'#A3A3A3', 'black':'#303030'};
+let algorithms = ['naive', "k-shortest"];
 let playbackValues = [1, 100, 500, 1000, 2000];
 let dateTimeCounter;
 let dateTime;
@@ -304,7 +305,19 @@ $(function () {
     $("input[name=default_ready]").val(defaultValues['ready']);
     $("input[name=default_due]").val(defaultValues['due']);
     $("input[name=default_time]").val(defaultValues['time']);
-    $("input[name=default_algorithm]").val(defaultValues['algorithm']);
+    for (let i = 0; i < algorithms.length; i++) {
+        let opt = document.createElement('option');
+        opt.value = algorithms[i];
+        opt.id = 'option_'+i;
+        opt.className = 'option';
+        opt.innerHTML = algorithms[i];
+        $('.selectpicker').append(opt);
+    }
+    $("#option_"+algorithms.indexOf(defaultValues['algorithm'])).attr("selected", "selected");
+
+    $('.selectpicker').change(function () {
+        defaultValues['algorithm']=this.value;
+    });
 
     $('#add-btn').click(function () {
         convoyID++;

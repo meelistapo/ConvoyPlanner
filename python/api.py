@@ -1,31 +1,26 @@
 import sys
 import zerorpc
 import gevent
-import traceback
+from collection import collect
 from exact import calculate
+# import python.exact
+
 
 
 class ConvoyApi(object):
 
-    def calc(self, data):
-        """based on the input text, return the int result"""
-        try:
-            # return real_calc(text)
-            return calculate(data)
-        except Exception as e:
-            return 0.0
-
     def generatePaths(self, data):
-        """based on the input text, return the int result"""
         try:
+            return collect(data)
             # return '1 [164 3583 2960] 0.2580022264992 0|3 [1660 2557 704 813] 0.06120995327724 0|2 [3338 3583 3800] 0.43484810014 0.07506187486113335|'
-            return calculate(data)
+            # return calculate(data)
         except Exception as e:
 
             # return  traceback.print_exc()
             # return  sys.exc_info()[0]
             # traceback.print_tb(e.__traceback__)
             return e
+        """based on the input text, return the int result"""
 
     def echo(self, text):
         """echo any text"""

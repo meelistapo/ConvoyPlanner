@@ -585,7 +585,25 @@ a.accordion-toggle {
     border-bottom-right-radius: 0;
     border-right: 0;
 }
+.form-control{
+    text-align: center !important;
+}
 
 .zoom{
     border: none !important;
+}
+
+.selectpicker{
+    width: 150px;
+    height: 34px;
+    border-radius: 4px;
+    text-align-last:center;
+}
+
+.option{
+    text-align-last: center;
+    text-align: center;
+    -ms-text-align-last: center;
+    -moz-text-align-last: center;
+    text-align-last: center;
 }
