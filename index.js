@@ -12,18 +12,22 @@ const fs = require('fs');
 const knn = require('leaflet-knn');
 const nodes = require('./nodes');
 const endpoints = require('./endpoints');
-// const oldnodes = require('./oldnodes');
 const roads = require('./roads');
 const tracks = require('./tracks');
-const datetime = require('eonasdan-bootstrap-datetimepicker');
+require('eonasdan-bootstrap-datetimepicker');
 let defaultValues = {'length':5000,'speed':50, 'ready': 0, 'due':24, 'headway':5, 'time': 'current','algorithm':'Branch and bound', 'playback':1000};
 let convoys = {};
 let mapObjects = {};
 let paths = {};
+let times = {};
+let startOrder = [];
 let convoyID = 0;
 let colorIdx = 0;
-let colors = ['darkpurple', 'orange', 'darkblue', 'green','red' ,  'black',  'purple',  'blue',  'darkred', 'lightgreen', 'cadetblue',  'pink', 'darkgreen', 'lightred', 'gray', 'beige',  'lightblue', 'lightgray'];
+let colors = ['darkpurple', 'orange', 'darkblue', 'green', 'red',  'black',  'purple',  'blue',  'darkred', 'lightgreen', 'cadetblue',  'pink', 'darkgreen', 'lightred', 'gray', 'beige',  'lightblue', 'lightgray'];
 let hex = {'red': '#D33D2A','darkred':'#A03336', 'lightred':'#FF8D7E', 'orange':'#F49630', 'beige':'#FFCA91', 'green':'#71AF26', 'darkgreen':'#718224', 'lightgreen':'#BBF770', 'blue':'#38A9DB', 'darkblue':'#0065A0', 'lightblue':'#89DBFF', 'purple':'#D051B8', 'darkpurple':'#593869', 'pink':'#FF90E9', 'cadetblue':'#426877', 'gray':'#575757', 'lightgray':'#A3A3A3', 'black':'#303030'};
+let playbackValues = [1, 100, 500, 1000, 2000];
+let dateTimeCounter;
+let dateTime;
 let result;
 
 const map = L.map('map', {
@@ -49,6 +53,15 @@ function assignColor(convoyID) {
     mapObjects[convoyID]['color'] = color;
     return color;
 }
+
+
+function updateClock(dateTime = (new Date()).getTime()) {
+    // Update the time display
+    $('#cursor-date').html("&nbsp;&nbsp;"+L.Playback.Util.DateStr(dateTime));
+    $('#cursor-time').html("&nbsp;"+L.Playback.Util.TimeStr(dateTime));
+}
+
+
 
 function init_video(tracks) {
     // Colors for AwesomeMarkers
@@ -82,13 +95,15 @@ function init_video(tracks) {
 }
 
 function start(startTime, path, color, duration, passingTime){
+    console.log(startTime, duration, passingTime);
+    console.log(path, color);
     if (startTime == 0) {
         drawPath(L.polyline(path), color, duration, passingTime);
         return false
     }
-    let start = +new Date
+    let start = +new Date;
     let interval = setInterval(function () {
-        let time = (new Date - start)
+        let time = (new Date - start);
         if (time >= startTime) {
             drawPath(L.polyline(path), color, duration, passingTime);
             clearInterval(interval);
@@ -97,6 +112,16 @@ function start(startTime, path, color, duration, passingTime){
     return false
 }
 
+function msToTime(duration) {
+    let milliseconds = parseInt((duration % 1000) / 100), seconds = parseInt((duration / 1000) % 60), minutes = parseInt((duration / (1000 * 60)) % 60), hours = parseInt((duration / (1000 * 60 * 60)) % 24);
+    hours = (hours < 10) ? "0" + hours : hours;
+    minutes = (minutes < 10) ? "0" + minutes : minutes;
+    seconds = (seconds < 10) ? "0" + seconds : seconds;
+
+    return hours + ":" + minutes + ":" + seconds;
+}
+
+
 $(function () {
     // add map tiles
     L.tileLayer('tiles/{z}/{x}/{y}.png').addTo(map);
@@ -104,6 +129,13 @@ $(function () {
     L.control.zoom({position:'topright'}).addTo(map);
 
 
+    updateClock();
+    dateTimeCounter = setInterval(updateClock, 1000);
+
+
+    console.log(L.Playback.Util.TimeStr(dateTime))
+    console.log(L.Playback.Util.TimeStr(dateTime+360000))
+    console.log(msToTime(361811))
     //
     // //fences
     //
@@ -129,12 +161,24 @@ $(function () {
 
     let isPlaying = false;
     $('#play-pause').click(function() {
-        if (isPlaying === false) {
+        if (isPlaying === false && result) {
             playback.start();
             // geoTriggers.startPolling();
             $('#play-pause-icon').removeClass('icon-play');
             $('#play-pause-icon').addClass('icon-pause');
             isPlaying = true;
+
+            // let currentTime = 0;
+            for (let i = 0; i < startOrder.length; i++) {
+                let convoyID = startOrder[i];
+                let travelTime = times[convoyID]['travel']/defaultValues['playback'];
+                let startTime = times[convoyID]['start']/defaultValues['playback'];
+                let passingTime = times[convoyID]['pass']/defaultValues['playback'];
+                // let runningStartTime = startTime - currentTime;
+                // currentTime = startTime;
+                let color = hex[mapObjects[convoyID]['color']];
+                start(startTime, paths[convoyID], color, travelTime, passingTime);
+            }
         } else {
             playback.stop();
             // geoTriggers.stopPolling();
@@ -150,10 +194,11 @@ $(function () {
         $('#time-slider').slider('value', val);
     });
 
-    $('#start-time-txt').html(new Date(playback.getStartTime()).toString());
-    startTime = playback.getStartTime();
-    $('#cursor-date').html(L.Playback.Util.DateStr(startTime));
-    $('#cursor-time').html(L.Playback.Util.TimeStr(startTime));
+    // $('#start-time-txt').html(new Date(playback.getStartTime()).toString());
+    // startTime = playback.getStartTime();
+    // startTime = (new Date()).getTime();
+    // $('#cursor-date').html("&nbsp;&nbsp;"+L.Playback.Util.DateStr(startTime));
+    // $('#cursor-time').html("&nbsp;&nbsp;"+L.Playback.Util.TimeStr(startTime));
 
     $('#time-slider').slider({
         min: playback.getStartTime(),
@@ -167,45 +212,54 @@ $(function () {
         }
     });
 
-    $('#cursor-time').val(playback.getTime().toString());
+    // $('#cursor-time').val(playback.getTime().toString());
     $('#speed').val(playback.getSpeed().toString());
 
     $('#speed-slider').slider({
-        min: -9,
-        max: 9,
-        step: .1,
-        value: speedToSliderVal(playback.getSpeed()),
+        // min: -9,
+        min: 0,
+        // max: 9,
+        max: 4,
+        // step: .1,
+        step: 1,
+        value: 3,
+        // value: speedToSliderVal(playback.getSpeed()),
         orientation: 'vertical',
         slide: function( event, ui ) {
-            var speed = sliderValToSpeed(parseFloat(ui.value));
-            playback.setSpeed(speed);
-            $('.speed').html(speed).val(speed);
+            $("#speed-input").val( playbackValues[ui.value] );
+            // $("#label").text(playbackValues[ui.value]);
+            $('#speed-icon-val').html(playbackValues[ui.value]);
+            defaultValues['playback']= playbackValues[ui.value]
+            // var speed = sliderValToSpeed(parseFloat(ui.value));
+            // playback.setSpeed(speed);
+            // $('.speed').html(speed).val(speed);
         }
     });
-
-    $('#speed-input').on('keyup', function(e) {
-        console.log("haaa")
-        var speed = parseFloat($('#speed-input').val());
-        if (!speed) return;
-        playback.setSpeed(speed);
-        $('#speed-slider').slider('value', speedToSliderVal(speed));
-        $('#speed-icon-val').html(speed);
-        if (e.keyCode === 13) {
-            $('.speed-menu').dropdown('toggle');
-        }
-    });
+    //
+    // $('#speed-input').on('keyup', function(e) {
+    //     console.log("haaa")
+    //     var speed = parseFloat($('#speed-input').val());
+    //     if (!speed) return;
+    //     playback.setSpeed(speed);
+    //     $('#speed-slider').slider('value', speedToSliderVal(speed));
+    //     $('#speed-icon-val').html(speed);
+    //     if (e.keyCode === 13) {
+    //         $('.speed-menu').dropdown('toggle');
+    //     }
+    // });
 
     $('#calendar').datepicker({
         changeMonth: true,
         changeYear: true,
         altField: '#date-input',
         altFormat: 'mm/dd/yy',
-        defaultDate: new Date(playback.getTime()),
+        defaultDate: dateTime,
         onSelect: function(date) {
             var date = new Date(date);
-            var time = $('#timepicker').data('timepicker');
+            var time =  $('#timepicker-input').val();
             var ts = combineDateAndTime(date, time);
             playback.setCursor(ts);
+            updateClock(ts);
             $('#time-slider').slider('value', ts);
         }
     });
@@ -219,135 +273,29 @@ $(function () {
         e.stopPropagation();
     });
 
-    $('#timepicker').timepicker({
-        showSeconds: true
-    });
-    $('#timepicker').timepicker('setTime',
-        new Date(playback.getTime()).toTimeString());
-
-    $('#timepicker').timepicker().on('changeTime.timepicker', function(e) {
-        var date = $('#calendar').datepicker('getDate');
-        var ts = combineDateAndTime(date, e.time);
-        playback.setCursor(ts);
-        $('#time-slider').slider('value', ts);
+    $('#timepicker').datetimepicker({
+        format: 'HH:mm:ss'
     });
 
-    $('#load-tracks-btn').on('click', function(e) {
-        $('#load-tracks-modal').modal();
-    });
 
-    // // Initialize the draw control and pass it the FeatureGroup of editable layers
-    // drawControl = new L.Control.Draw({
-    //     draw: {
-    //         position: 'topleft',
-    //         polyline: false,
-    //         polygon: false,
-    //         rectangle: false,
-    //         marker: false,
-    //         circle: {
-    //             title: "Create a Virtual Fence!",
-    //             shapeOptions: {
-    //                 color: '#662d91'
-    //             }
-    //         }
-    //     },
-    //     edit: {
-    //         featureGroup: geoTriggerFeatureGroup
-    //     }
-    // });
-    // map.addControl(drawControl);
-
-    map.on('draw:created', function (e) {
-        var type = e.layerType
-            , layer = e.layer;
-
-        if (type === 'marker') {
-            layer.bindPopup('A popup!');
-        }
-
-        if (type === 'circle') {
-            var latlng = layer.getLatLng();
-            $('#new-trigger-lat').html(latlng.lat);
-            $('#new-trigger-lng').html(latlng.lng);
-            var radius = layer.getRadius();
-            $('#new-trigger-radius').html(radius);
-
-            $('input, textarea').val('').html('');
-            $('#create-geotrigger-modal').modal();
-        }
-
-        // geoTriggerFeatureGroup.addLayer(layer);
-    });
-
-    map.on('draw:edited', function (e) {
-        var layers = e.layers;
-        var countOfEditedLayers = 0;
-        layers.eachLayer(function(layer) {
-            countOfEditedLayers++;
-
-            geoTriggers.editTrigger({
-                latlng: layer.getLatLng(),
-                radius: layer.getRadius(),
-                placeId: layer.placeId
-            });
-
-        });
-        console.log("Edited " + countOfEditedLayers + " layers");
-
-    });
-
-    map.on('draw:deleted', function(e) {
-        e.layers.eachLayer(function(layer) {
-            geoTriggers.deleteTrigger(layer.placeId);
-        });
-    });
-
-    // NH TODO this doesnt work...
-    // L.DomUtil.get('changeColor').onclick = function () {
-    // 	drawControl.setDrawingOptions({ rectangle: { shapeOptions: { color: '#004a80' } } });
-    // };
-
-    // geoTriggers = new GeoTriggers(geoTriggerFeatureGroup, triggerFired);
+    $('#timepicker-input').val($('#cursor-time').text());
     //
-    // $('#create-geotrigger-save').on('click', function(e) {
+    // $('#timepicker').timepicker({
+    //     showSeconds: true
+    // });
+    // $('#timepicker').datetimepicker('setTime',
+    //     new Date(dateTime).toTimeString());
     //
-    //     geoTriggers.createTrigger({
-    //         lat: parseFloat($('#new-trigger-lat').html()),
-    //         lng: parseFloat($('#new-trigger-lng').html()),
-    //         radius: parseFloat($('#new-trigger-radius').html()),
-    //         name: $('#new-trigger-name').val(),
-    //         message: $('#new-trigger-message').val()
-    //     });
-    //
-    //     console.log('save');
-    //     $('#create-geotrigger-modal').modal('hide');
+    // $('#timepicker').datetimepicker().on('changeTime.timepicker', function(e) {
+    //     var date = $('#calendar').datepicker('getDate');
+    //     var ts = combineDateAndTime(date, e.time);
+    //     playback.setCursor(ts);
+    //     $('#time-slider').slider('value', ts);
     // });
 
 
-    $('#load-tracks-save').on('click', function(e) {
-        var file = $('#load-tracks-file').get(0).files[0];
-        loadTracksFromFile(file);
-    });
-
-    // $('#view-all-fences-btn').on('click', function(e) {
-    //     var bounds = geoTriggerFeatureGroup.getBounds();
-    //     map.fitBounds(bounds);
-    // });
 
 
-    // $(function(){
-    //     $('#datetimepicker').datetimepicker({
-    //         locale: 'en',
-    //         format: 'DD-MM-YYYY HH:mm',
-    //         sideBySide: true,
-    //         // todayHighlight: true,
-    //         // dateFormat: 'yy-mm-dd',
-    //         useCurrent:true
-    //         // viewDate: '2015-01-01 23:59:59',
-    //         // showTodayButton: true,
-    //         // showClose:true
-    //     }).show();
-    // });
 
     // insert default values to settings
     $("input[name=default_headway]").val(defaultValues['headway']);
@@ -455,6 +403,11 @@ $(function () {
 
 
     $('#calc-btn').click(function () {
+        //stop clock
+        clearInterval(dateTimeCounter);
+        let date = new Date(moment($('#cursor-date').text()).format('YYYY, MM, DD'));
+        dateTime= combineDateAndTime(date, $('#cursor-time').text());
+
         // let data = JSON.stringify(convoys);
         // let data = "ddd"
         let inputConvoys={};
@@ -466,46 +419,57 @@ $(function () {
         let input = [inputConvoys, defaultValues['headway'], defaultValues['algorithm']];
         // console.log(input);
         getPaths(input, function(output){
-            result = output;
-            $('#run-btn').removeClass("hidden");
-            $('.navbar-fixed-bottom').removeClass("hidden");
-            $('.sidebar-table').css('top','180px');
+            if (output.startsWith('error')){
+                console.log(output);
+                delete result;
+            }
+            else {
+                result = JSON.parse(output);
+                console.log(result);
+                startOrder = [];
+                let featureGroup = [];
+                for (let i = 0; i < result.length; i++) {
+                    let path = result[i][0];
+                    let travelTime = result[i][1]*3600000;
+                    let startTime = result[i][2]*3600000;
+                    let convoyID = result[i][3];
+                    let passingTime = ((convoys[convoyID]['length']/1000)/convoys[convoyID]['speed'])*3600000;
+                    let color = hex[mapObjects[convoyID]['color']];
+                    paths[convoyID] = constructPath(path);
+                    mapObjects[convoyID]['path']= L.polyline(paths[convoyID], {color: color, weight: 5});
+                    featureGroup.push(mapObjects[convoyID]['path']);
+                    times[convoyID] = {};
+                    times[convoyID]['travel']= travelTime;
+                    times[convoyID]['start']= startTime;
+                    times[convoyID]['pass']= passingTime;
+                    startOrder.push(convoyID);
+                }
+                mapObjects['group'] = L.featureGroup(featureGroup);
+                $('#run-btn').removeClass("hidden");
+                $('.play').removeClass("hidden");
+                $('.sidebar-table').css('top','180px');
+                $('.nav > li.dropdown').css('left','10px');
+            }
         });
     });
 
 });
 
 $('#run-btn').click(function () {
-    animateSidebar();
-
-    Object.keys(data).sort().forEach(function(v, i) {
-            console.log(v, data[v], i);
-        });
-
-
-    let startOrder = result[0];
-    let data = result[1];
-    for (let convoyID in data) {
-        let path = constructPath(data[convoyID][0]);
-        paths[convoyID] = path;
+    // animateSidebar();
+    if (result){
+        // let currentTime = 0;
+        for (let i = 0; i < startOrder.length; i++) {
+            let convoyID = startOrder[i];
+            let travelTime = times[convoyID]['travel']/defaultValues['playback'];
+            let startTime = times[convoyID]['start']/defaultValues['playback'];
+            let passingTime = times[convoyID]['pass']/defaultValues['playback'];
+            // let runningStartTime = startTime - currentTime;
+            // currentTime = startTime;
+            let color = hex[mapObjects[convoyID]['color']];
+            start(startTime, paths[convoyID], color, travelTime, passingTime);
+        }
     }
-
-    let currentTime = 0;
-    for (let i = 0; i < startOrder.length; i++) {
-        let convoyID = startOrder[i];
-        let pathData = data[startOrder[i]];
-        let pathNodes = pathData[0];
-        let duration = pathData[1]*3600000/defaultValues['playback'];
-        let startTime = pathData[2]*3600000/defaultValues['playback'];
-        let runningStartTime = startTime - currentTime;
-        currentTime = startTime
-        let path = constructPath(pathNodes);
-        let color = hex[mapObjects[convoyID]['color']];
-        let passingTime = ((convoys[convoyID]['length']/1000)/convoys[convoyID]['speed'])*3600000/defaultValues['playback'];
-        start(runningStartTime, path, color, duration, passingTime);
-    }
-
-
 
 
 
@@ -526,30 +490,43 @@ $('#run-btn').click(function () {
     // init_video(tracks);
 });
 
+$('#clock-btn').click(function (){
+    clearInterval(dateTimeCounter);
+    // $('#timepicker').html(+L.Playback.Util.TimeStr(dateTime));
+    // $('#date-input').html(L.Playback.Util.DateStr(dateTime));
+});
+
+$('#now').click(function (){
+    dateTimeCounter = setInterval(updateClock, 1000);
+    $('#clock-btn').parent().removeClass('open');
+    $("a[aria-expanded='true']").attr('aria-expanded','false');
+    $('#timepicker-input').val($('#cursor-time').text())
+});
+
 
 function addConvoy(convoyID){
-    let row = '<tr name = "length" id="row_' + convoyID +'"><td><button type="button" class="nr btn btn-lg btn-default id" id="ID_' + convoyID +'" title="Convoy ID"></td>' +
+    let row = '<tr id="row_' + convoyID +'"><td><button type="button" class="nr btn btn-lg btn-default id" id="ID_' + convoyID +'" title="Convoy ID"></td>' +
         '<td><button type="button" class="btn btn-lg btn-default" id = "origin_' + convoyID+'" title="Add origin"><span class="glyphicon glyphicon-play"></span></button></td>' +
         '<td><button type="button" class="btn btn-lg btn-default" id = "destination_' + convoyID+'" title="Add destination"><span class="glyphicon glyphicon-stop"></button></td>' +
         '<td>' +
-        '<input type="number"  name = "length" min="1" max="99999" value = "'+ defaultValues['length'] +'" class="input center merge-bottom-input input-number convoy-input"><div class="btn-group btn-block">' +
-        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify" data-type="minus" data-field="length"><span class="glyphicon glyphicon-minus"></span></button>' +
-        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify" data-type="plus" data-field="length"><span class="glyphicon glyphicon-plus"></span></button></div>' +
+        '<input type="number"  name = "length" min="1" max="99999" value = "'+ defaultValues['length'] +'" data-field="length_' + convoyID +'" class="input center merge-bottom-input input-number convoy-input"><div class="btn-group btn-block">' +
+        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify" data-type="minus" data-field="length_' + convoyID +'"><span class="glyphicon glyphicon-minus"></span></button>' +
+        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify" data-type="plus" data-field="length_' + convoyID +'"><span class="glyphicon glyphicon-plus"></span></button></div>' +
         '</td>' +
         '<td>' +
-        '<input type="number" name = "speed" min="1"   max=  "999" value = "'+ defaultValues['speed'] +'" class="input center merge-bottom-input input-number convoy-input"><div class="btn-group btn-block">' +
-        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify" data-type="minus" data-field="speed"><span class="glyphicon glyphicon-minus"></span></button>' +
-        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify" data-type="plus" data-field="speed"><span class="glyphicon glyphicon-plus"></span></button></div>' +
+        '<input type="number" name = "speed" min="1"   max=  "999" value = "'+ defaultValues['speed'] +'" data-field="speed_' + convoyID +'" class="input center merge-bottom-input input-number convoy-input"><div class="btn-group btn-block">' +
+        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify" data-type="minus" data-field="speed_' + convoyID +'"><span class="glyphicon glyphicon-minus"></span></button>' +
+        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify" data-type="plus" data-field="speed_' + convoyID +'"><span class="glyphicon glyphicon-plus"></span></button></div>' +
         '</td>' +
         '<td>' +
-        '<input type="number" name = "ready" min="0"   max=  "99" value = "'+ defaultValues['ready'] +'" class="input center merge-bottom-input input-number convoy-input"><div class="btn-group btn-block">' +
-        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify" data-type="minus" data-field="ready"><span class="glyphicon glyphicon-minus"></span></button>' +
-        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify" data-type="plus" data-field="ready"><span class="glyphicon glyphicon-plus"></span></button></div>' +
+        '<input type="number" name = "ready" min="0"   max=  "99" value = "'+ defaultValues['ready'] +'" data-field="ready_' + convoyID +'" class="input center merge-bottom-input input-number convoy-input"><div class="btn-group btn-block">' +
+        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify" data-type="minus" data-field="ready_' + convoyID +'"><span class="glyphicon glyphicon-minus"></span></button>' +
+        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify" data-type="plus" data-field="ready_' + convoyID +'"><span class="glyphicon glyphicon-plus"></span></button></div>' +
         '</td>' +
         '<td>' +
-        '<input type="number" name = "due" min="1"   max=  "99" value = "'+ defaultValues['due'] +'" class="input center merge-bottom-input input-number convoy-input"><div class="btn-group btn-block">' +
-        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify" data-type="minus" data-field="due"><span class="glyphicon glyphicon-minus"></span></button>' +
-        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify" data-type="plus" data-field="due"><span class="glyphicon glyphicon-plus"></span></button></div>' +
+        '<input type="number" name = "due" min="1"   max=  "99" value = "'+ defaultValues['due'] +'"  data-field="due_' + convoyID +'" class="input center merge-bottom-input input-number convoy-input"><div class="btn-group btn-block">' +
+        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify" data-type="minus" data-field="due_' + convoyID +'"><span class="glyphicon glyphicon-minus"></span></button>' +
+        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify" data-type="plus" data-field="due_' + convoyID +'"><span class="glyphicon glyphicon-plus"></span></button></div>' +
         '</td>' +
         '<td><button type="button" class="btn btn-lg btn-danger" id = "delete_' + convoyID+'" title="Delete row"><span class="glyphicon glyphicon-minus"></span></td></tr>';
     let table = $('#convoy-list');
@@ -561,24 +538,25 @@ function addConvoy(convoyID){
 
 
 function modifyNumbers(button, convoyID){
-    let fieldName = $(button).attr('data-field');
+    let fieldID = $(button).attr('data-field');
+    let fieldName = fieldID.split('_')[0];
     let type      = $(button).attr('data-type');
-    let input = $("input[name='"+fieldName+"']");
+    let input = $("input[data-field='"+fieldID+"']");
     let currentVal = parseInt(input.val());
     if (!isNaN(currentVal)) {
         if(type == 'minus') {
             if(currentVal > input.attr('min')) {
                 input.val(currentVal - 1).change();
-                changeValue(fieldName, convoyID, input.val())
+                changeValue(fieldName, convoyID, parseInt(input.val()))
             }
-            if(parseInt(input.val()) == input.attr('min')) {
+            if(parseInt(input.val()) == parseInt(input.attr('min'))) {
                 $(button).attr('disabled', true);
             }
 
         } else if(type == 'plus') {
             if(currentVal < input.attr('max')) {
                 input.val(currentVal + 1).change();
-                changeValue(fieldName, convoyID, input.val());
+                changeValue(fieldName, convoyID, parseInt(input.val()));
             }
             if(parseInt(input.val()) == input.attr('max')) {
                 $(button).attr('disabled', true);
@@ -591,15 +569,16 @@ function modifyNumbers(button, convoyID){
 }
 
 function modifyInput(input, convoyID){
-    input = $(input)
+    input = $(input);
     let minValue =  parseInt(input.attr('min'));
     let maxValue =  parseInt(input.attr('max'));
     let valueCurrent = parseInt(input.val());
-    let fieldName = input.attr('name');
+    let fieldID = input.attr('data-field');
+    let fieldName = fieldID.split('_')[0];
     if(valueCurrent >= minValue && valueCurrent <= maxValue) {
-        $(".modify[data-type='minus'][data-field='"+fieldName+"']").removeAttr('disabled')
-        $(".modify[data-type='plus'][data-field='"+fieldName+"']").removeAttr('disabled')
-        changeValue(fieldName, convoyID, input.val());
+        $(".modify[data-type='minus'][data-field='"+fieldID+"']").removeAttr('disabled');
+        $(".modify[data-type='plus'][data-field='"+fieldID+"']").removeAttr('disabled');
+        changeValue(fieldName, convoyID, parseInt(input.val()));
     } else {
         input.val(input.data('oldValue'));
     }
@@ -679,61 +658,71 @@ $("#login-btn").click(function() {
     return false;
 });
 
-$("#list-menu").click(function() {
-    if($('.sidebar-wrapper').hasClass("hidden")){
-        $('.sidebar-wrapper').removeClass("hidden");
+$('#list-menu, .sidebar-hide-btn').click(function() {
+    let statbar = $('.statbar');
+    if (!statbar.hasClass('closed')){
+        for (let i = 0; i < startOrder.length; i++) {
+            convoyID = startOrder[i];
+            if ($('#checkbox_' + convoyID).is(':checked')){
+                map.removeLayer(mapObjects[convoyID]['path']);
+            }
+            else{
+                mapObjects[convoyID]['origin'].addTo(map);
+                mapObjects[convoyID]['destination'].addTo(map)
+            }
+        }
+        $(".stat-row").remove();
+        statbar.toggleClass("closed");
+        $('.navbar-toggle-btn').toggleClass('hidden');
+        $('#zoom_group').toggleClass('hidden');
+        animateStatbar(0);
     }
-    // if(!$('.statbar-wrapper').hasClass("hidden")){
-    //     $('.statbar-wrapper').addClass("hidden");
-    // }
     animateSidebar();
+    console.log($('#features').hasClass('hidden'));
+    $('#features').toggleClass("hidden");
     return false;
 });
 
-$("#stat-menu").click(function() {
-    if(Object.keys(paths).length>0) {
-        if ($('.statbar-wrapper').hasClass("hidden")) {
-            $('.statbar-wrapper').removeClass("hidden");
-            $('.navbar-fixed-bottom').addClass("hidden");
-            for (let convoyID in paths) {
-                drawLine(paths[convoyID], hex[mapObjects[convoyID]['color']]);
-                addStatRow(convoyID, hex[mapObjects[convoyID]['color']]);
+$('#stat-menu, .navbar-toggle-btn').click(function() {
 
+    if(startOrder.length > 0) {
+        let statbar = $('.statbar');
+        let  rows = 1;
+        statbar.removeClass("hidden");
+        let order = startOrder.sort(function(a, b){return a-b});
+        if(statbar.hasClass("closed")){
+            for (let i = 0; i < order.length; i++) {
+                convoyID = order[i];
+                mapObjects[convoyID]['path'].addTo(map);
+                addStatRow(convoyID);
+                rows = $("#stat-list").find("tr").length;
+            }
+            let sidebar = $('#features');
+            $('.navbar-fixed-bottom').addClass("hidden");
+            if(!sidebar.hasClass("hidden")){
+                animateSidebar();
+                sidebar.addClass("hidden");
             }
         }
-        if (!$('.sidebar-wrapper').hasClass("hidden")) {
-            $('.sidebar-wrapper').addClass("hidden");
+        else{
+            for (let i = 0; i < order.length; i++) {
+                convoyID = order[i];
+                map.removeLayer(mapObjects[convoyID]['path']);
+            }
+            $(".stat-row").remove();
         }
-        animateSidebar();
+        statbar.toggleClass("closed");
+        $('.navbar-toggle-btn').toggleClass('hidden');
+        $('#zoom_group').toggleClass('hidden');
+        animateStatbar(rows-1);
         return false;
     }
 
 });
 
-$('.navbar-toggle-btn').click(function () {
-    animateStatbar();
-    return false
-});
-
-
-$("#nav-btn").click(function() {
-    $(".navbar-collapse").collapse("toggle");
-    return false;
-});
-
-$(".sidebar-toggle-btn").click(function() {
-    animateSidebar();
-    return false;
-});
-
-$(".sidebar-hide-btn").click(function() {
-    animateSidebar();
-    return false;
-});
 
 function animateSidebar() {
-    $('#features').removeClass("hidden");
-    var toggleWidth = $("#sidebar").width() == 460 ? "0px" : "460px";
+    let toggleWidth = $("#sidebar").width() == 460 ? "0px" : "460px";
     $("#sidebar").animate({
         width: toggleWidth
     }, function() {
@@ -742,12 +731,24 @@ function animateSidebar() {
 }
 
 
-function animateStatbar() {
-    $('#nav2').removeClass("hidden");
-    console.log("sds")
-    var toggleWidth = $("#nav2").height() == 250 ? "0px" : "250px";
-    $("#nav2").animate({
-        height: toggleWidth
+function animateStatbar(nr) {
+    let calcHeight;
+    if (nr ==0){
+        calcHeight = "0px";
+    }
+    else if (nr == 1){
+        calcHeight = "80px";
+    }
+    else if (nr == 2){
+        calcHeight = "130px";
+    }
+    else{
+        calcHeight = "180px";
+    }
+    let statbar = $('.statbar');
+    let toggleHeight = statbar.height() == "0px" ? "0px" : calcHeight;
+    statbar.animate({
+        height: toggleHeight
     }, function() {
         map.invalidateSize();
     });
@@ -774,33 +775,6 @@ function sidebarClick(id) {
     }
 }
 
-function syncSidebar() {
-    /* Empty sidebar features */
-    $("#feature-list tbody").empty();
-    /* Loop through theaters layer and add only features which are in the map bounds */
-    theaters.eachLayer(function (layer) {
-        if (map.hasLayer(theaterLayer)) {
-            if (map.getBounds().contains(layer.getLatLng())) {
-                $("#feature-list tbody").append('<tr class="feature-row" id="' + L.stamp(layer) + '" lat="' + layer.getLatLng().lat + '" lng="' + layer.getLatLng().lng + '"><td style="vertical-align: middle;"><img width="16" height="18" src="assets/img/theater.png"></td><td class="feature-name">' + layer.feature.properties.NAME + '</td><td style="vertical-align: middle;"><i class="fa fa-chevron-right pull-right"></i></td></tr>');
-            }
-        }
-    });
-    /* Loop through museums layer and add only features which are in the map bounds */
-    museums.eachLayer(function (layer) {
-        if (map.hasLayer(museumLayer)) {
-            if (map.getBounds().contains(layer.getLatLng())) {
-                $("#feature-list tbody").append('<tr class="feature-row" id="' + L.stamp(layer) + '" lat="' + layer.getLatLng().lat + '" lng="' + layer.getLatLng().lng + '"><td style="vertical-align: middle;"><img width="16" height="18" src="assets/img/museum.png"></td><td class="feature-name">' + layer.feature.properties.NAME + '</td><td style="vertical-align: middle;"><i class="fa fa-chevron-right pull-right"></i></td></tr>');
-            }
-        }
-    });
-    /* Update list.js featureList */
-    featureList = new List("features", {
-        valueNames: ["feature-name"]
-    });
-    featureList.sort("feature-name", {
-        order: "asc"
-    });
-}
 
 
 
@@ -809,23 +783,70 @@ function syncSidebar() {
 
 
 
-function addStatRow(convoyID, color){
-    let row = '<tr id="stat-row_' + convoyID +'">' +
+
+function addStatRow(convoyID){
+    let startTime  = dateTime +  times[convoyID]['start'];
+    let travelTime = times[convoyID]['travel'];
+    let passingTime = times[convoyID]['pass'];
+    let finishTime = startTime + travelTime + passingTime;
+
+    let row = '<tr class = "stat-row" id="stat-row_' + convoyID +'" align = "center">' +
         '<td>' +
-        '   <label class="btn btn-success active"> <input type="checkbox" autocomplete="off" checked> <span class="glyphicon glyphicon-ok"></span> </label> </td>' +
-        '<td><label> 1751</label></td>' +
-        '<td><label> 1751</label></td>' +
-        '<td><label> 1751</label></td>' +
-        '<td><label> 1751</label></td>' +
-        '<td><label> 1751</label></td>' +
-        '<td><label> 1751</label></td>' +
+        '<div class="checkbox">' +
+        '<input type="checkbox" id="checkbox_' + convoyID +'"  checked>' +
+        '<label for="checkbox_' + convoyID +'"  style="background-color:'+hex[mapObjects[convoyID]['color']]+'"></label>' +
+        '</div>' +
+        '</td>' +
+        '<td>' +
+        '<button type="button" class="btn btn-md btn-default zoom" id = "zoom_' + convoyID +'"><i class="glyphicon glyphicon-zoom-in"></i></button>'+
+        '</td>' +
+        '<td><label class = "stat-label" id = "stat_ID_' + convoyID +'"></label></td>' +
+        '<td><label class = "stat-label" id ="stat_start_' + convoyID +'"></label></td>' +
+        '<td><label class = "stat-label" id = "stat_finish_' + convoyID +'"></label></td>' +
+        '<td><label class = "stat-label" id = "stat_travel_' + convoyID +'"></label></td>' +
+        '<td><label class = "stat-label" id = "stat_pass_' + convoyID +'"></label></td>' +
+        '<td><label ></label></td>' +
         '</td></tr>';
     let table = $('#stat-list');
     table.append(row);
+    $('#stat_ID_' + convoyID).text(convoyID+'.');
+    $('#stat_start_' + convoyID).html(L.Playback.Util.DateStr(startTime)+"<br />"+L.Playback.Util.TimeStr(startTime));
+    $('#stat_finish_' + convoyID).html(L.Playback.Util.DateStr(finishTime)+"<br />"+L.Playback.Util.TimeStr(finishTime));
+    $('#stat_travel_' + convoyID).html(msToTime(travelTime));
+    $('#stat_pass_' + convoyID).html(msToTime(passingTime));
+
+
+    $('#checkbox_' + convoyID).change(function(){
+        let convoyID = this.id.split('_')[1];
+        if (this.checked){
+            mapObjects[convoyID]['path'].addTo(map);
+            mapObjects[convoyID]['origin'].addTo(map);
+            mapObjects[convoyID]['destination'].addTo(map);
+            $('#stat-row_' + convoyID+' > td > label').css('color','black');
+            }
+        else{
+            map.removeLayer(mapObjects[convoyID]['path']);
+            map.removeLayer(mapObjects[convoyID]['origin']);
+            map.removeLayer(mapObjects[convoyID]['destination']);
+            $('#stat-row_' + convoyID+' > td > label').css('color','#ccc');
+        }
+    });
+
+    $('#zoom_' + convoyID).click(function () {
+        let convoyID = this.id.split('_')[1];
+        map.fitBounds(mapObjects[convoyID]['path'].getBounds());
+    });
 }
 
+$('#zoom_group').click(function () {
+    console.log("shddsds")
+    map.fitBounds(mapObjects['group'].getBounds());
+});
 
-
+// $('#stat-menu > li > a').click(function() {
+//     console.log("sss")
+//     $('.navmenu').offcanvas('toggle');
+// });
 
 function drawLine(path, color) {
     L.polyline(path, {color: color, weight: 5}).addTo(map);
@@ -853,8 +874,8 @@ function drawPath(path, color, duration, length){
 function addMarker(e, id) {
     let parts = id.split('_');
     let feature = parts[0];
-    let conID = parts[1];
-    let color = mapObjects[conID]['color'] || assignColor(conID);
+    let convoyID = parts[1];
+    let color = mapObjects[convoyID]['color'] || assignColor(convoyID);
     let marker_icon;
 
     if(feature === 'origin'){
@@ -862,7 +883,7 @@ function addMarker(e, id) {
             icon: 'play',
             markerColor: color
         });
-        $('#origin_' + conID).first().css('color', 'white');
+        $('#origin_' + convoyID).first().css('color', 'white');
     }
     else if(feature === 'destination') {
         marker_icon = L.AwesomeMarkers.icon({
@@ -870,26 +891,26 @@ function addMarker(e, id) {
             markerColor: color
         });
 
-        $('#destination_' + conID).first().css('color', 'white');
+        $('#destination_' + convoyID).first().css('color', 'white');
     }
 
     let marker = L.marker(e.latlng,
         {'draggable': true, 'icon': marker_icon});
 
     map.addLayer(marker);
-    mapObjects[conID][feature] = marker;
+    mapObjects[convoyID][feature] = marker;
 
     let nearest = findNearestNode(marker);
     marker.setLatLng(nearest);
-    $('#'+id).css('background-color', hex[mapObjects[conID]['color']]);
+    $('#'+id).css('background-color',hex[mapObjects[convoyID]['color']]);
     $('#map').css('cursor', '-webkit-grab');
-    updateConvoys(conID, feature, nearest);
+    updateConvoys(convoyID, feature, nearest);
 
     marker.on('dragend', function(event) {
         let marker = event.target;
         nearest = findNearestNode(marker);
         marker.setLatLng(nearest, {draggable: 'true'}).bindPopup(nearest).update();
-        updateConvoys(conID, feature, nearest);
+        updateConvoys(convoyID, feature, nearest);
     });
 }
 
@@ -901,6 +922,7 @@ function findNearestNode(marker) {
 
 function updateConvoys(ID, feature, nearest){
     convoys[ID][feature]= nearest['layer']['feature']['properties'];
+    console.log(convoys[ID]);
     if(Object.keys(convoys[ID]).length == 6){
         if(!$('#calc-btn').hasClass("hidden")) {
         }
@@ -980,27 +1002,25 @@ function triggerFired(trigger) {
 }
 
 function combineDateAndTime(date, time) {
-    var yr = date.getFullYear();
-    var mo = date.getMonth();
-    var dy = date.getDate();
+    console.log(date,time)
+    let parts = time.split(':')
+    let yr = date.getFullYear();
+    let mo = date.getMonth();
+    let dy = date.getDate();
+    let hr = parseInt(parts[0]);
+    let min = parseInt(parts[1]);
+    let sec = parseInt(parts[2]);
+
+    console.log(time, yr, hr, min, sec)
     // the calendar uses hour and the timepicker uses hours...
-    var hr = time.hours || time.hour;
-    if (time.meridian == 'PM' && hr != 12) hr += 12;
-    var min = time.minutes || time.minute;
-    var sec = time.seconds || time.second;
+    // var hr = time.hours || time.hour;
+    // if (time.meridian == 'PM' && hr != 12) hr += 12;
+    // var min = time.minutes || time.minute;
+    // var sec = time.seconds || time.second;
     return new Date(yr, mo, dy, hr, min, sec).getTime();
 }
 
-function loadTracksFromFile(file) {
-    var reader = new FileReader();
-    reader.readAsText(file);
-    reader.onload = function(e) {
-        var tracks = JSON.parse(e.target.result);
-        playback.addTracks(tracks);
-        samples.addData(tracks);
-        $('#load-tracks-modal').modal('hide');
-    }
-}
+
 
 function save(data, name) {
     var json = JSON.stringify(data, null, 2);

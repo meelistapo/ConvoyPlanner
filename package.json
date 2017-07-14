@@ -40,6 +40,7 @@
     "jquery": "^3.2.1",
     "jquery-ui-dist": "^1.12.1",
     "leaflet": "^1.0.3",
-    "leaflet-knn": "^0.1.0"
+    "leaflet-knn": "^0.1.0",
+    "moment": "^2.18.1"
   }
 }

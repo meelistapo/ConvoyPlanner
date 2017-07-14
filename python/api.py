@@ -23,9 +23,9 @@ class ConvoyApi(object):
         except Exception as e:
 
             # return  traceback.print_exc()
-            return  sys.exc_info()[0]
+            # return  sys.exc_info()[0]
             # traceback.print_tb(e.__traceback__)
-            # return e
+            return e
 
     def echo(self, text):
         """echo any text"""

@@ -8,6 +8,7 @@
 <link rel="stylesheet" href="node_modules/jquery-ui-dist/jquery-ui.min.css">
 <link rel="stylesheet" href="node_modules/bootstrap/dist/css/bootstrap.min.css">
 <link rel="stylesheet" href="node_modules/bootstrap-timepicker/css/bootstrap-timepicker.min.css">
+<!--<link rel="stylesheet" href="node_modules/eonasdan-bootstrap-datetimepicker/src/sass/bootstrap-datetimepicker-build.scss">-->
 <link rel="stylesheet" href="node_modules/leaflet/dist/leaflet.css">
 <link rel="stylesheet" href="node_modules/font-awesome/css/font-awesome.min.css">
 <link rel="stylesheet" href="node_modules/drmonty-leaflet-awesome-markers/css/leaflet.awesome-markers.css">
@@ -17,18 +18,20 @@
 <script type="text/javascript" src="node_modules/leaflet/dist/leaflet.js"></script>
 <script type="text/javascript" src="node_modules/drmonty-leaflet-awesome-markers/js/leaflet.awesome-markers.min.js"></script>
 <script type="text/javascript" src="node_modules/bootstrap/dist/js/bootstrap.min.js"></script>
+<script type="text/javascript" src="node_modules/moment/min/moment.min.js"></script>
 <script type="text/javascript" src="node_modules/bootstrap-timepicker/js/bootstrap-timepicker.min.js"></script>
+<script type="text/javascript" src="node_modules/eonasdan-bootstrap-datetimepicker/src/js/bootstrap-datetimepicker.js"></script>
 <script type="text/javascript" src="LeafletPlayback.js"></script>
 <script type="text/javascript" src="movingMarker.js"></script>
 <script type="text/javascript" src="renderer.js"></script>
 
 
-<!--<script src="src/Util.js"></script>-->
-<!--<script src="src/MoveableMarker.js"></script>-->
-<!--<script src="src/TickPoint.js"></script>-->
-<!--<script src="src/Tick.js"></script>-->
-<!--<script src="src/Clock.js"></script>-->
-<!--<script src="src/Playback.js"></script>-->
+<script src="src/Util.js"></script>
+<script src="src/MoveableMarker.js"></script>
+<script src="src/TickPoint.js"></script>
+<script src="src/Tick.js"></script>
+<script src="src/Clock.js"></script>
+<script src="src/Playback.js"></script>
 
 
 
@@ -37,116 +40,128 @@
 <body>
   <div class="navbar navbar-inverse navbar-fixed-top" role="navigation">
     <div class="container-fluid">
-      <div class="navbar-header">
-        <div class="navbar-icon-container">
-          <a href="#" class="navbar-icon pull-right visible-xs" id="nav-btn"><i class="fa fa-bars fa-lg white"></i></a>
-          <a href="#" class="navbar-icon pull-right visible-xs" id="sidebar-toggle-btn"><i class="fa fa-search fa-lg white"></i></a>
-        </div>
-      </div>
       <div class="navbar-collapse collapse">
         <ul class="nav navbar-nav">
           <li class="hidden-xs"><a href="#" data-toggle="collapse" data-target=".navbar-collapse.in" id="list-menu"><i class="fa fa-list white"></i>&nbsp;&nbsp;Convoys</a></li>
-          <li><a href="#" data-toggle="collapse" data-target=".navbar-collapse.in" id="settings-btn"><i class="fa fa-cog"></i>&nbsp;&nbsp;Settings</a> </li>
-          <li><a href="#" data-toggle="collapse" data-target=".navbar-collapse.in" id="stat-menu"><i class="fa fa-list-alt"></i>&nbsp;&nbsp;Statistics</a></li>
+          <li><a href="#" data-toggle="collapse" data-target=".navbar-collapse.in" id="settings-btn"><i class="fa fa-cog white"></i>&nbsp;&nbsp;Settings</a> </li>
+          <li><a href="#" data-toggle="collapse" data-target=".navbar-collapse.in" id="stat-menu"><i class="fa fa-list-alt white"></i>&nbsp;&nbsp;Results</a></li>
           <li><a href="#" data-toggle="collapse" data-target=".navbar-collapse.in" id="about-btn"><i class="fa fa-question-circle white"></i>&nbsp;&nbsp;About</a></li>
+          <li class = "play hidden">
+            <a href="#"><button type="button" class="btn btn-xs btn-default btn-inverse" id = "play-pause" title="Play"><span class="glyphicon glyphicon-play"></span></button></a>
+          </li>
+          <li class = "play hidden">
+            <a href="#"><div id="time-slider"></div></a>
+          </li>
+          <li class="btn dropdown">
+            <a id="clock-btn" class="clock" data-toggle="dropdown" href="#">
+              <i class = "fa fa-clock-o white"></i>
+              <span id="cursor-date"></span>
+              <span id="cursor-time"></span>
+            </a>
+            <div class="dropdown-menu" role="menu" aria-labelledby="clock-btn">
+              <label>Set starting moment</label>
+              <!--<div class="input-append bootstrap-timepicker">-->
+              <div class="row">
+                <div>
+                  <div class="form-group">
+                    <div class='input-group' id='timepicker'>
+                      <span class="input-group-my">
+                        <span id ="now" class="glyphicon glyphicon-screenshot"></span>
+                      </span>
+                      <input type='text' class="form-control" id='timepicker-input' align="center" onblur="if(this.value!=this.defaultValue){$('#cursor-time').html('&nbsp;'+this.value)}" />
+                      <span class="input-group-addon">
+                        <span class="glyphicon glyphicon-time"></span>
+                    </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div id="calendar"></div>
+            </div>
+          </li >
+          <li class="btn dropdown play hidden">
+            <a href="#">
+            <button id="speed-btn" class="btn btn-xs btn-default btn-inverse" data-toggle="dropdown" href="#"><i class="glyphicon glyphicon-dashboard"></i> <span id="speed-icon-val" class="speed">1000</span>x</button>
+            <div class="speed-menu dropdown-menu" role="menu" aria-labelledby="speed-btn">
+              <div>
+                <label class="speed-label">Playback<br/>Speed<br/></label>
+              </div>
+              <input class="speed-label" id="speed-input" class="span1 speed" type="text" value="1000" />
+              <div id="speed-slider"></div>
+            </div>
+            </a>
+          </li>
         </ul>
+      </div>
       </div><!--/.navbar-collapse -->
-    </div>
   </div>
-  <div class="nav2 navbar navbar-fixed-top" role="navigation">
+
+
+  <div class="statbar hidden closed" role="navigation">
     <div class="container-fluid">
-      <div class="navbar-collapse collapse">
-        <div class="panel-heading">
-          <button type="button" class="btn btn-xs btn-default pull-up navbar-toggle-btn"><i class="glyphicon glyphicon-chevron-up"></i></button>
-        </div>
+      <div class="navbar-collapse ">
         <div class="statbar-table">
           <table id="stat-list">
             <thead >
-              <tr class='stat-table-header'>
-                <th></th>
-                <th>ID</th>
-                <th>Start time</th>
-                <th>Finish time</th>
-                <th>Travel time</th>
-                <th>Pass time</th>
-              </tr>
+            <tr id = "stat-heading">
+              <!--<th class = col-xs-2></th>-->
+              <th class = col-xs-1></th>
+              <th class = col-xs-1></th>
+              <th class = col-xs-2>ID</th>
+              <th class = col-xs-2>Start time</th>
+              <th class = col-xs-2>Finish time</th>
+              <th class = col-xs-2 >Travel time</th>
+              <th class = col-xs-2>Pass time</th>
+              <th class = col-xs-2>
+              </th>
+            </tr>
             </thead>
           </table>
-        </div><!--/.navbar-collapse -->
-        <div class = "wrapper">
-          <button type="button" class="btn btn-md btn-block" id="add-point-btn"><i></i>Add a checkpoint</button>
         </div>
+        <button type="button" class="btn btn-xs btn-default pull-up navbar-toggle-btn hidden"><i class="glyphicon glyphicon-chevron-up"></i></button>
+        <button type="button" class="btn btn-xs btn-default hidden" id = "zoom_group"><i class="glyphicon glyphicon-zoom-in"></i></button>
       </div>
     </div>
   </div>
 
-
   <div id="container">
+
+
     <div id="sidebar">
-      <div class="sidebar-wrapper">
-        <div class="panel panel-default hidden" id="features">
-          <div class="panel-heading">
-            <h3 class="panel-title">List of Convoys
-              <button type="button" class="btn btn-xs btn-default pull-right sidebar-hide-btn"><i class="glyphicon glyphicon-chevron-left"></i></button></h3>
+      <div class="panel panel-default hidden" id="features">
+        <div class="panel-heading">
+          <h3 class="panel-title">List of Convoys
+            <button type="button" class="btn btn-xs btn-default pull-right sidebar-hide-btn"><i class="glyphicon glyphicon-chevron-left"></i></button></h3>
+        </div>
+        <div class="panel-body">
+          <div>
+            <button type="button" class="btn btn-md btn-success btn-block hidden" id="run-btn"><i></i>Run</button>
           </div>
-          <div class="panel-body">
-            <div>
-              <button type="button" class="btn btn-md btn-success btn-block hidden" id="run-btn"><i></i>Run</button>
-            </div>
-            <div>
-              <button type="button" class="btn btn-md btn-success btn-block hidden" id="calc-btn"><i></i>Calculate paths</button>
-            </div>
-            <div>
-              <button type="button" class="btn btn-md btn-primary btn-block" id="add-btn"><i></i>Add a convoy</button>
-            </div>
+          <div>
+            <button type="button" class="btn btn-md btn-success btn-block hidden" id="calc-btn"><i></i>Calculate paths</button>
           </div>
-          <div class="sidebar-table">
-            <table class="table table-hover" id="convoy-list">
-              <thead class = "hidden">
-                <tr class="stat-row">
-                  <th class='table-header'>ID</th>
-                  <th class='table-header'>Start</th>
-                  <th class='table-header'>Destination</th>
-                  <th class='table-header'>Length</th>
-                  <th class='table-header'>Speed</th>
-                  <th class='table-header'>Ready</th>
-                  <th class='table-header'>Due</th>
-                  <th class='table-header'>Remove</th>
-                </tr>
-              </thead>
-            </table>
+          <div>
+            <button type="button" class="btn btn-md btn-primary btn-block" id="add-btn"><i></i>Add a convoy</button>
           </div>
         </div>
+        <div class="sidebar-table">
+          <table class="table table-hover" id="convoy-list">
+            <thead class = "hidden">
+              <tr class="stat-row">
+                <th class='table-header'>ID</th>
+                <th class='table-header'>Start</th>
+                <th class='table-header'>Destination</th>
+                <th class='table-header'>Length</th>
+                <th class='table-header'>Speed</th>
+                <th class='table-header'>Ready</th>
+                <th class='table-header'>Due</th>
+                <th class='table-header'>Remove</th>
+              </tr>
+            </thead>
+          </table>
+        </div>
       </div>
-      <!--<div class="statbar-wrapper hidden">-->
-        <!--<div class="panel panel-default">-->
-          <!--<div class="panel-heading">-->
-            <!--<h3 class="panel-title">Statistcs-->
-              <!--<button type="button" class="btn btn-xs btn-default pull-right sidebar-toggle-btn"><i class="glyphicon glyphicon-chevron-left"></i></button></h3>-->
-          <!--</div>-->
-          <!--<div class="panel-body">-->
-            <!--<div>-->
-              <!--<button type="button" class="btn btn-md btn-block" id="add-point-btn"><i></i>Add a checkpoint</button>-->
-            <!--</div>-->
-          <!--</div>-->
-          <!--<div class="statbar-table">-->
-            <!--<table class="table table-hover" id="stat-list">-->
-              <!--<thead>-->
-              <!--<tr class='stat-table-header'>-->
-                <!--<th></th>-->
-                <!--<th>ID</th>-->
-                <!--<th>Start time</th>-->
-                <!--<th>Finish time</th>-->
-                <!--<th>Travel time</th>-->
-                <!--<th>Pass time</th>-->
-              <!--</tr>-->
-              <!--</thead>-->
-            <!--</table>-->
-          <!--</div>-->
-        <!--</div>-->
-      <!--</div>-->
     </div>
-    <!--<div id="statbar">-->
 
     <!--</div>-->
     <div id="map">
@@ -204,48 +219,56 @@
         <!--</div>-->
       <!--</div>-->
     <!--</div>-->
-  </div>
+  <!--</div>-->
 
-  <div class="navbar navbar-inverse navbar-fixed-bottom hidden" role="navigation">
-    <div class="container-fluid">
-      <div class="navbar-collapse collapse nav-footer col-xs-10">
-        <ul class="nav-footer">
-          <li class="col-xs-1">
-            <button type="button" class="btn btn-lg btn-default" id = "play-pause" title="Play"><span class="glyphicon glyphicon-play"></span></button>
-          </li>
-          <li class="col-xs-5">
-            <div id="time-slider"></div>
-          </li>
-          <li class="btn dropup col-xs-2">
-            <a id="clock-btn" class="clock" data-toggle="dropdown" href="#">
-              <span id="cursor-date"></span><br/>
-              <span id="cursor-time"></span>
-            </a>
-            <div class="dropdown-menu" role="menu" aria-labelledby="clock-btn">
-              <label>Playback Cursor Time</label>
-              <div class="input-append bootstrap-timepicker">
-                <input id="timepicker" type="text" class="input-small span2">
-                <span class="add-on"><i class="icon-time"></i></span>
-              </div>
-              <div id="calendar"></div>
-              <div class="input-append">
-                <input id="date-input" type="text" class="input-small">
-                <span class="add-on"><i class="icon-calendar"></i></span>
-              </div>
-            </div>
-          </li>
-          <li class="btn dropup col-xs-2">
-            <a id="speed-btn" data-toggle="dropdown" href="#"><i class="glyphicon glyphicon-dashboard"></i> <span id="speed-icon-val" class="speed">1</span>x</a>
-            <div class="speed-menu dropdown-menu" role="menu" aria-labelledby="speed-btn">
-              <label>Playback<br/>Speed</label>
-              <input id="speed-input" class="span1 speed" type="text" value="1" />
-              <div id="speed-slider"></div>
-            </div>
-          </li>
-        </ul>
-       </div>
-    </div>
-  </div>
+  <!--<div class="navbar navbar-inverse navbar-fixed-bottom " role="navigation">-->
+    <!--<div class="container-fluid">-->
+      <!--<div class="navbar-collapse collapse nav-footer">-->
+        <!--<ul class="nav navbar-nav nav-footer">-->
+
+
+          <!--<li >-->
+            <!--<button type="button" class="btn btn-sm btn-default" id = "play-pause" title="Play"><span class="glyphicon glyphicon-play"></span></button>-->
+          <!--</li>-->
+          <!--<li>-->
+            <!--<div id="time-slider"></div>-->
+          <!--</li>-->
+
+
+
+          <!--<li class="btn dropup col-xs-2">-->
+            <!--<a id="clock-btn" class="clock" data-toggle="dropdown" href="#">-->
+              <!--<span id="cursor-date"></span><br/>-->
+              <!--<span id="cursor-time"></span>-->
+            <!--</a>-->
+            <!--<div class="dropdown-menu" role="menu" aria-labelledby="clock-btn">-->
+              <!--<label>Playback Cursor Time</label>-->
+              <!--<div class="input-append bootstrap-timepicker">-->
+                <!--<input id="timepicker" type="text" class="input-small span2">-->
+                <!--<span class="add-on"><i class="glyphicon glyphicon-time"></i></span>-->
+              <!--</div>-->
+              <!--<div id="calendar"></div>-->
+              <!--<div class="input-append">-->
+                <!--<input id="date-input" type="text" class="input-small">-->
+                <!--<span class="add-on"><i class="icon-calendar"></i></span>-->
+              <!--</div>-->
+            <!--</div>-->
+          <!--</li>-->
+
+
+
+          <!--<li class="btn dropup">-->
+            <!--<button id="speed-btn" class="btn btn-md btn-default" data-toggle="dropdown" href="#"><i class="glyphicon glyphicon-dashboard"></i> <span id="speed-icon-val" class="speed">1000</span>x</button>-->
+            <!--<div class="speed-menu dropdown-menu" role="menu" aria-labelledby="speed-btn">-->
+              <!--<label>Playback<br/>Speed</label>-->
+              <!--<input id="speed-input" class="span1 speed" type="text" value="1000" />-->
+              <!--<div id="speed-slider"></div>-->
+            <!--</div>-->
+          <!--</li>-->
+        <!--</ul>-->
+       <!--</div>-->
+    <!--</div>-->
+  <!--</div>-->
 
 
 

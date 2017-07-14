@@ -61,24 +61,23 @@ def calculate(data):
 
     env = Environment(convoys, headway, algorithm,optimality,k, step)
 
-    solution, ub = best_choice(env)
-    convoy_ids= []
-    starts = []
-    for conID, data in solution.items():
-        convoy_ids.append(int(conID))
-        starts.append(data[2])
-    start_times, start_order = zip(*sorted(zip(starts, convoy_ids)))
+    solution = best_choice(env)
+    # convoy_ids= []
+    # starts = []
+    # for conID, data in solution.items():
+    #     convoy_ids.append(int(conID))
+    #     starts.append(data[2])
+    # start_times, start_order = zip(*sorted(zip(starts, convoy_ids)))
 
 
-    output = []
-    for ID in start_order:
-        path = ""
-        for node in solution[ID][0]:
-            path+=(str(node))+" "
-        output.append([ID, path, solution[ID][1], solution[ID][2]])
-
-    e = json.dumps(output)
-    return e
+    # output = []
+    # for ID in start_order:
+    #     path = ""
+    #     for node in solution[ID][0]:
+    #         path+=(str(node))+" "
+    #     output.append([ID, path, solution[ID][1], solution[ID][2]])
+    #
+    return json.dumps(solution)
 
 def addPaths(candidates, new_path, timestep, convoy):
     newpaths = []
@@ -161,17 +160,17 @@ def add_paths(graph, coordinates, all_feasible_paths, added_paths, headway):
             for node in path_data[0]:
                 if node in selected_path_data[0]:
                     if check_conflict(graph, coordinates, selected_path_data, path_data, node, selected_convoy, convoy, headway):
-                        arrival_at_node_1 = arrival_time(graph, node, selected_path_data[0], selected_convoy, selected_path_data[2])
-                        arrival_at_node_2 = arrival_time(graph, node, path_data[0], convoy, path_data[2])
-                        tail = convoy.length / convoy.speed + arrival_at_node_2
-                        depature_time = tail - arrival_at_node_1 + headway
-                        new_path = [selected_path_data[0], selected_path_data[1], depature_time]
+                            arrival_at_node_1 = arrival_time(graph, node, selected_path_data[0], selected_convoy, selected_path_data[2])
+                            arrival_at_node_2 = arrival_time(graph, node, path_data[0], convoy, path_data[2])
+                            tail = convoy.length / convoy.speed + arrival_at_node_2
+                            depature_time = tail - arrival_at_node_1 + headway + 0.00001
+                            new_path = [selected_path_data[0], selected_path_data[1], depature_time, int(selected_convoy.id)]
 
-                        if check_validity(new_path, added_paths):
-                            added_paths.append(new_path)
-                            extended_paths[selected_convoy].append(new_path)
-                            new_paths = True
-                        break
+                            if check_validity(new_path, added_paths):
+                                added_paths.append(new_path)
+                                extended_paths[selected_convoy].append(new_path)
+                                new_paths = True
+                            break
 
     if new_paths:
         return extended_paths, added_paths
@@ -215,16 +214,17 @@ def best_choice(env):
     first_convoy = minPaths(all_feasible_paths)
     k_start = {i: k for i in range(convoy_count)}
     convoy_list = [i for i in range(1, len(convoys) + 1)]
-    feasible_solution, ub = branch_and_bound(graph, coordinates, all_feasible_paths, lb, lb, ub, 1, convoy_count, convoy_list, {}, {}, first_convoy, headway)
+    feasible_solution, ub = branch_and_bound(graph, coordinates, all_feasible_paths, lb, lb, ub, 1, convoy_count, convoy_list, [], {}, first_convoy, headway)
     if not optimality:
         added_paths = []
         while not feasible_solution:
             all_feasible_paths, added_paths = add_paths(graph, coordinates, all_feasible_paths, added_paths, headway)
+            print(added_paths)
             if all_feasible_paths:
                 convoy_list = [i for i in range(1, len(convoys) + 1)]
-                feasible_solution, ub = branch_and_bound(graph,  coordinates, all_feasible_paths, lb, lb, ub, 1, convoy_count, convoy_list, {}, {}, first_convoy, headway)
+                feasible_solution, ub = branch_and_bound(graph,  coordinates, all_feasible_paths, lb, lb, ub, 1, convoy_count, convoy_list, [], {}, first_convoy, headway)
                 if feasible_solution:
-                    return feasible_solution, ub
+                    return feasible_solution
             else:
                 return "No feasible solution"
 
@@ -258,7 +258,7 @@ def best_choice(env):
     #         best_solution = feasible_solution
     #     print("------------", obtainable_lb)
 
-    return feasible_solution, ub
+    return feasible_solution
 
 
 def minPaths(all_feasible_paths):
@@ -273,12 +273,12 @@ def minPaths(all_feasible_paths):
 
 def branch_and_bound(graph, coordinates, all_feasible_paths, lb, selected_lb, ub, level, n, convoy_list, current_collection, best_collection, first_convoy, headway):
     if level == n:
-        current_collection[convoy_list[0]] = list(all_feasible_paths.values())[0][0]
-        ub_candidate = sum(paths[1] + paths[2] for paths in list(current_collection.values()))
+        current_collection.append(list(all_feasible_paths.values())[0][0])
+        ub_candidate = sum(paths[1] + paths[2] for paths in current_collection)
         if ub_candidate < ub:
             ub = ub_candidate
             best_collection = deepcopy(current_collection)
-        del current_collection[convoy_list[0]]
+        del current_collection[-1]
         return best_collection, ub
     else:
         if level == 1:
@@ -291,7 +291,7 @@ def branch_and_bound(graph, coordinates, all_feasible_paths, lb, selected_lb, ub
         paths = all_feasible_paths[selected_convoy]
         # print(selected_convoy)
         for path in paths:
-            current_collection[selected_convoy.id] = path
+            current_collection.append(path)
             # remove selected convoy's paths
             all_compatible_paths = {i: fp for i, fp in all_feasible_paths.items() if i != selected_convoy}
             # remove paths uncompatible with selected path
@@ -299,9 +299,9 @@ def branch_and_bound(graph, coordinates, all_feasible_paths, lb, selected_lb, ub
             # print(all_compatible_paths)
             if not all_compatible_paths:
                 # print("fantom 3")
-                del current_collection[selected_convoy.id]
+                del current_collection[-1]
                 continue
-            selected_values = sum(paths[1] for paths in list(current_collection.values()))
+            selected_values = sum(paths[1] for paths in current_collection)
             remaining_best_values = sum(paths[0][1] for paths in list(all_compatible_paths.values()) if paths)
             lb_candidate = selected_values + remaining_best_values
             if lb_candidate > lb:
@@ -309,7 +309,7 @@ def branch_and_bound(graph, coordinates, all_feasible_paths, lb, selected_lb, ub
             if lb > ub:
                 # print("fantom 1")
                 lb = selected_lb
-                del current_collection[selected_convoy.id]
+                del current_collection[-1]
                 continue
             if level < n:
                 level += 1
@@ -317,7 +317,7 @@ def branch_and_bound(graph, coordinates, all_feasible_paths, lb, selected_lb, ub
                                                        current_collection, best_collection, first_convoy, headway)
 
             level -= 1
-            del current_collection[selected_convoy.id]
+            del current_collection[-1]
     return best_collection, ub
 
 
@@ -563,7 +563,7 @@ def find_feasible_paths(graph, convoys, optimality, k, step):
             # feasible_paths = k_shortest_routes_optimal(graph, i, k, i.ready_time, step, canditate_paths)
         else:
             path = k_shortest_paths(graph, i.origin, i.destination, i.speed, 1, 0, weight='weight')
-            feasible_paths = [[path[0]['path'], path[0]['cost'], i.ready_time]]
+            feasible_paths = [[path[0]['path'], path[0]['cost'], i.ready_time, int(i.id)]]
         all_feasible_paths[i] = feasible_paths
 
     #
@@ -580,29 +580,29 @@ def find_feasible_paths(graph, convoys, optimality, k, step):
 
 if __name__ == '__main__':
     c = []
-    c1 = Convoy(1,164, 2960, 5, 50, 0, 24)
-    c2 = Convoy(2, 3338, 3800,  5, 50, 0, 24)
-    c3 = Convoy(3, 1660, 813, 5, 50, 0, 24)
+    c1 = Convoy(1, 3429, 3193, 5, 50, 0, 24)
+    c2 = Convoy(2, 1271, 2236,  5, 50, 0, 24)
+    # c3 = Convoy(3, 1660, 813, 5, 50, 0, 24)
     # # # c1 = Convoy(1, 1, 2, 5000, 50, 0, 24)
     # # # c2 = Convoy(2, 3, 4, 5000, 50, 0, 24)
     # # # c3 = Convoy(3, 5, 6, 5000, 50, 0, 24)
-    # # # c4 = Convoy(4, 1660, 813, 5000, 50, 0, 24)
-    # # # c5 = Convoy(5, 7, 8, 5000, 50, 0, 24)
-    # # # c6 = Convoy(6, 9, 10, 5000, 50, 0, 24)
-    # # # c7 = Convoy(7, 11, 12, 5000, 50, 0, 24)
-    # # # c8 = Convoy(8, 3467, 2557, 5000, 50, 0, 24)
-    # # # c9 = Convoy(9, 3766, 3442, 5000, 50, 0, 24)
-    # # # c10 = Convoy(10, 1660, 813, 5000, 50, 0, 24)
+    # c4 = Convoy(4, 1660, 813, 5000, 50, 0, 24)
+    # c5 = Convoy(5, 7, 8, 5000, 50, 0, 24)
+    # c6 = Convoy(6, 9, 10, 5000, 50, 0, 24)
+    # c7 = Convoy(7, 11, 12, 5000, 50, 0, 24)
+    # c8 = Convoy(8, 3467, 2557, 5000, 50, 0, 24)
+    # c9 = Convoy(9, 3766, 3442, 5000, 50, 0, 24)
+    # c10 = Convoy(10, 1660, 813, 5000, 50, 0, 24)
     c.append(c1)
     c.append(c2)
-    c.append(c3)
-    # # # c.append(c4)
-    # # # c.append(c5)
-    # # # c.append(c6)
-    # # # c.append(c7)
-    # # # c.append(c8)
-    # # # c.append(c9)
-    # # # c.append(c10)
+    # c.append(c3)
+    # c.append(c4)
+    # c.append(c5)
+    # c.append(c6)
+    # c.append(c7)
+    # c.append(c8)
+    # c.append(c9)
+    # c.append(c10)
     h = 5/60
     kk = 1
     stepp = 0.5
@@ -612,21 +612,21 @@ if __name__ == '__main__':
     print(solution)
     #
     #
-    convoy_ids= []
-    starts = []
-    for conID, data in solution.items():
-        convoy_ids.append(int(conID))
-        starts.append(data[2])
-    print(convoy_ids)
-    print(starts)
-    start_times, start_order = zip(*sorted(zip(starts, convoy_ids)))
-    print(start_times)
-    print(list(start_order))
-    output = ''
-    for ID in start_order:
-        output += str(ID)+" ["+" ".join(str(node) for node in solution[ID][0])+"]"+" "+str(solution[ID][1])+" "+str(solution[ID][2])+"|"
-
-    print(output)
+    # convoy_ids= []
+    # starts = []
+    # for conID, data in solution.items():
+    #     convoy_ids.append(int(conID))
+    #     starts.append(data[2])
+    # print(convoy_ids)
+    # print(starts)
+    # start_times, start_order = zip(*sorted(zip(starts, convoy_ids)))
+    # print(start_times)
+    # print(list(start_order))
+    # output = ''
+    # for ID in start_order:
+    #     output += str(ID)+" ["+" ".join(str(node) for node in solution[ID][0])+"]"+" "+str(solution[ID][1])+" "+str(solution[ID][2])+"|"
+    #
+    # print(output)
 
 
 
@@ -665,8 +665,8 @@ if __name__ == '__main__':
     # G = nx.from_scipy_sparse_matrix(M)
     #
     # # Read data from shp file
-    # G = nx.read_shp('../data/data.shp')
-    # # G= create_graph()
+    G = nx.read_shp('../data/data.shp')
+    G= create_graph()
     # # get coordinates
     # coordinates = {key: value for (key, value) in enumerate(G.nodes())}
     #
@@ -675,17 +675,17 @@ if __name__ == '__main__':
     #
     #
     # # change labels to integers
-    # G = nx.convert_node_labels_to_integers(G, first_label=0)
+    G = nx.convert_node_labels_to_integers(G, first_label=0)
     #
     # # change graph to simple graph
     # G = G.to_undirected()
     #
     # # keep only edge length as it's attribute
-    # nx.set_edge_attributes(G, "distance", nx.get_edge_attributes(G, 'Length'))
+    nx.set_edge_attributes(G, "distance", nx.get_edge_attributes(G, 'Length'))
     #
     # #
-    # print(nx.dijkstra_path_length(G, 2803, 2332, weight='weight'))
-    # print(nx.dijkstra_path_length(G, 3800, 2960, weight='weight'))
+    print(nx.dijkstra_path_length(G, 164, 2960, weight='weight'))
+    print(nx.dijkstra_path_length(G, 3338, 3800, weight='weight'))
     # paths = k_shortest_paths(G, 525, 1983, 3)
 
     # solution = best_choice()
