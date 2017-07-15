@@ -77,7 +77,7 @@ def calculate(data):
     #         path+=(str(node))+" "
     #     output.append([ID, path, solution[ID][1], solution[ID][2]])
     #
-    return json.dumps(solution)
+    return solution
 
 def addPaths(candidates, new_path, timestep, convoy):
     newpaths = []

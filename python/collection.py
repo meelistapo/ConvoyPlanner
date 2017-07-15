@@ -1,7 +1,7 @@
 import json
 import networkx
 from exact import best_choice
-# from code import best_choice
+from code import calculate
 
 class Environment:
     def __init__(self, convoys, headway, algorithm, optimality, k, step):
@@ -51,18 +51,33 @@ def collect(data):
     convoy_data = data[0]
     headway = data[1]/60
     algorithm = data[2]
-    k = 1
+    k = 5
     step = 0.5
     optimality = False
     convoys = []
+    origin = []
+    destination = []
+    length = []
+    speed= []
+    ready = []
+    due = []
     solution = "no solution"
+
+
     if algorithm == "naive":
         for convoyID, features in convoy_data.items():
             convoy = Convoy(convoyID, features["origin"], features["destination"], features["length"]/1000, features["speed"], features["ready"], features["due"])
             convoys.append(convoy)
-        env = Environment(convoys, headway, algorithm,optimality,k, step)
+        env = Environment(convoys, headway, algorithm, optimality,k, step)
         solution = best_choice(env)
     elif algorithm == "k-shortest":
-        solution = "hei"
+        for convoyID, features in convoy_data.items():
+            origin.append(features["origin"])
+            destination.append(features["destination"])
+            length.append(features["length"]/1000)
+            speed.append(features["speed"])
+            ready.append(features["ready"])
+            due.append(features["due"])
+        solution = calculate(origin, destination, length, speed, ready, due, headway, k)
 
     return json.dumps(solution)
