@@ -9,7 +9,6 @@ L.Playback = L.Playback.Clock.extend({
   },
 
   initialize: function (map, geoJSON, callback, options) {
-    console.log(this);
     this.map = map;
     this.geoJSON = geoJSON;
     this.tickPoints = [];

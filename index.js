@@ -134,9 +134,7 @@ $(function () {
     dateTimeCounter = setInterval(updateClock, 1000);
 
 
-    console.log(L.Playback.Util.TimeStr(dateTime))
-    console.log(L.Playback.Util.TimeStr(dateTime+360000))
-    console.log(msToTime(361811))
+
     //
     // //fences
     //
