@@ -2,6 +2,7 @@
 require('drmonty-leaflet-awesome-markers');
 // const boot = require('bootstrap');
 require('bootstrap-timepicker');
+let Spinner = require('spin.js');
 require('./src/Clock');
 require('./src/MoveableMarker');
 require('./src/Playback');
@@ -10,12 +11,13 @@ require('./src/TickPoint');
 require('./src/Util');
 const fs = require('fs');
 const knn = require('leaflet-knn');
+const moment = require('moment');
 const nodes = require('./nodes');
 const endpoints = require('./endpoints');
 const roads = require('./roads');
 const tracks = require('./tracks');
 require('eonasdan-bootstrap-datetimepicker');
-let defaultValues = {'length':5000,'speed':50, 'ready': 0, 'due':24, 'headway':5, 'time': 'current','algorithm':'naive', 'playback':1000};
+let defaultValues = {'length':5000,'speed':50, 'ready': 0, 'due':24, 'headway':5, 'time': 'current','method':'Brute-force', 'playback':500, 'k':3};
 let convoys = {};
 let mapObjects = {};
 let paths = {};
@@ -25,11 +27,17 @@ let convoyID = 0;
 let colorIdx = 0;
 let colors = ['darkpurple', 'orange', 'darkblue', 'green', 'red',  'black',  'purple',  'blue',  'darkred', 'lightgreen', 'cadetblue',  'pink', 'darkgreen', 'lightred', 'gray', 'beige',  'lightblue', 'lightgray'];
 let hex = {'red': '#D33D2A','darkred':'#A03336', 'lightred':'#FF8D7E', 'orange':'#F49630', 'beige':'#FFCA91', 'green':'#71AF26', 'darkgreen':'#718224', 'lightgreen':'#BBF770', 'blue':'#38A9DB', 'darkblue':'#0065A0', 'lightblue':'#89DBFF', 'purple':'#D051B8', 'darkpurple':'#593869', 'pink':'#FF90E9', 'cadetblue':'#426877', 'gray':'#575757', 'lightgray':'#A3A3A3', 'black':'#303030'};
-let algorithms = ['naive', "k-shortest"];
-let playbackValues = [1, 100, 500, 1000, 2000];
+let methods = ['Brute-force','Fixed-order', 'Exact - 1', 'Exact - 2', 'MILP - 1', 'MILP - 2','MILP-3', 'Input'];
+let playbackValues = [1, 100, 250, 500, 1000, 2000];
+let movingMarkers = [];
 let dateTimeCounter;
 let dateTime;
 let result;
+let duration;
+let isPlaying = false;
+let isAtStart = true;
+let counter = 0;
+
 
 const map = L.map('map', {
     minZoom: 8,
@@ -38,6 +46,9 @@ const map = L.map('map', {
     maxBoundsViscosity: 1.0,
     zoomControl: false
     }).setView([58.7764, 25.1305], 8);
+
+let playGroup = L.featureGroup([]).addTo(map);
+
 
 function writePaths(data){
     fs.writeFile('tracks.js', data, function(err){
@@ -96,9 +107,9 @@ function init_video(tracks) {
 }
 
 function start(startTime, path, color, duration, passingTime){
-    console.log(startTime, duration, passingTime);
-    console.log(path, color);
-    if (startTime == 0) {
+    // console.log(startTime, duration, passingTime);
+    // console.log(path, color);
+    if (startTime === 0) {
         drawPath(L.polyline(path), color, duration, passingTime);
         return false
     }
@@ -123,11 +134,21 @@ function msToTime(duration) {
 }
 
 
+function resetPlay() {
+    isPlaying = false;
+    isAtStart = true;
+    playGroup.clearLayers();
+    let icon = $('#play-pause-icon');
+    icon.removeClass('glyphicon glyphicon-pause');
+    icon.addClass('glyphicon glyphicon-play');
+}
+
 $(function () {
     // add map tiles
     L.tileLayer('tiles/{z}/{x}/{y}.png').addTo(map);
     // add zoom control
     L.control.zoom({position:'topright'}).addTo(map);
+    L.control.scale({'imperial':false}).addTo(map)
 
 
     updateClock();
@@ -139,59 +160,76 @@ $(function () {
     // //fences
     //
     //
-    let demoTracks = [tracks];
-
-    let samples = new L.GeoJSON(demoTracks, {
-        pointToLayer: function(geojson, latlng) {
-            var circle = new L.CircleMarker(latlng, {radius:5});
-            // circle.bindPopup(i);
-            return circle;
-        }
-    });
-
-
-
-    let playback = new L.Playback(map, demoTracks, clockCallback);
-
-    // map.on('click', function(e) {
-    //     console.log(e.latlng.toString());
+    // let demoTracks = [tracks];
+    //
+    // let samples = new L.GeoJSON(demoTracks, {
+    //     pointToLayer: function(geojson, latlng) {
+    //         var circle = new L.CircleMarker(latlng, {radius:5});
+    //         // circle.bindPopup(i);
+    //         return circle;
+    //     }
     // });
+    //
+    //
+    //
+    // let playback = new L.Playback(map, demoTracks, clockCallback);
 
 
-    let isPlaying = false;
+
+
     $('#play-pause').click(function() {
+        let icon = $('#play-pause-icon');
         if (isPlaying === false && result) {
-            playback.start();
+            // playback.start();
             // geoTriggers.startPolling();
-            $('#play-pause-icon').removeClass('icon-play');
-            $('#play-pause-icon').addClass('icon-pause');
+            icon.removeClass('glyphicon glyphicon-play');
+            icon.addClass('glyphicon glyphicon-pause');
+
+            if (!$('.statbar').hasClass('closed')){
+                toggleStatbar();
+            }
+
+            if (isAtStart){
+                for (let i = 0; i < startOrder.length; i++) {
+                    let convoyID = startOrder[i];
+                    let travelTime = times[convoyID]['travel']/defaultValues['playback'];
+                    let startTime = times[convoyID]['start']/defaultValues['playback'];
+                    let passingTime = times[convoyID]['pass']/defaultValues['playback'];
+                    let color = hex[mapObjects[convoyID]['color']];
+                    start(startTime, paths[convoyID], color, travelTime, passingTime);
+                }
+                isAtStart = false;
+                $('#stop').removeClass('hidden');
+                $('#playback').addClass('hidden');
+            }
+            else{
+                resumeMarkers()
+            }
+
             isPlaying = true;
 
-            // let currentTime = 0;
-            for (let i = 0; i < startOrder.length; i++) {
-                let convoyID = startOrder[i];
-                let travelTime = times[convoyID]['travel']/defaultValues['playback'];
-                let startTime = times[convoyID]['start']/defaultValues['playback'];
-                let passingTime = times[convoyID]['pass']/defaultValues['playback'];
-                // let runningStartTime = startTime - currentTime;
-                // currentTime = startTime;
-                let color = hex[mapObjects[convoyID]['color']];
-                start(startTime, paths[convoyID], color, travelTime, passingTime);
-            }
         } else {
-            playback.stop();
+            // playback.stop();
+            pauseMarkers();
             // geoTriggers.stopPolling();
-            $('#play-pause-icon').removeClass('icon-pause');
-            $('#play-pause-icon').addClass('icon-play');
+            icon.removeClass('glyphicon glyphicon-pause');
+            icon.addClass('glyphicon glyphicon-play');
             isPlaying = false;
         }
     });
 
-    $('#set-cursor').click(function(){
-        var val = $('#cursor-time').val();
-        playback.setCursor(val);
-        $('#time-slider').slider('value', val);
+    $('#stop').click(function() {
+        stopMarkers();
+        resetPlay();
+        $('#stop').addClass('hidden');
+        $('#playback').removeClass('hidden');
     });
+
+    // $('#set-cursor').click(function(){
+    //     var val = $('#cursor-time').val();
+    //     playback.setCursor(val);
+    //     $('#time-slider').slider('value', val);
+    // });
 
     // $('#start-time-txt').html(new Date(playback.getStartTime()).toString());
     // startTime = playback.getStartTime();
@@ -199,29 +237,39 @@ $(function () {
     // $('#cursor-date').html("&nbsp;&nbsp;"+L.Playback.Util.DateStr(startTime));
     // $('#cursor-time').html("&nbsp;&nbsp;"+L.Playback.Util.TimeStr(startTime));
 
-    $('#time-slider').slider({
-        min: playback.getStartTime(),
-        max: playback.getEndTime(),
-        step: playback.getTickLen(),
-        value: playback.getTime(),
-        slide: function( event, ui ) {
-            playback.setCursor(ui.value);
-            $('#cursor-time').val(ui.value.toString());
-            $('#cursor-time-txt').html(new Date(ui.value).toString());
-        }
-    });
+    // $('#time-slider').slider({
+    //     // min: playback.getStartTime(),
+    //     // max: playback.getEndTime(),
+    //     // step: playback.getTickLen(),
+    //     // value: playback.getTime(),
+    //     min: startMoment + dateTime,
+    //     max: endMoment + dateTime,
+    //     step: playback.getTickLen(),
+    //     value: dateTime,
+    //     slide: function( event, ui ) {
+    //         playback.setCursor(ui.value);
+    //         $('#cursor-time').val(ui.value.toString());
+    //         $('#cursor-time-txt').html(new Date(ui.value).toString());
+    //     }
+    // });
 
     // $('#cursor-time').val(playback.getTime().toString());
-    $('#speed').val(playback.getSpeed().toString());
+    // $('#speed').val(playback.getSpeed().toString());
+
+
+    // $("#speed-input").val( playbackValues[ui.value] );
+
+    $("#speed-input").val(defaultValues['playback']);
+    $('#speed-icon-val').html(defaultValues['playback']);
 
     $('#speed-slider').slider({
         // min: -9,
         min: 0,
         // max: 9,
-        max: 4,
+        max: 5,
         // step: .1,
         step: 1,
-        value: 3,
+        value: playbackValues.indexOf(defaultValues['playback']),
         // value: speedToSliderVal(playback.getSpeed()),
         orientation: 'vertical',
         slide: function( event, ui ) {
@@ -257,7 +305,7 @@ $(function () {
             var date = new Date(date);
             var time =  $('#timepicker-input').val();
             var ts = combineDateAndTime(date, time);
-            playback.setCursor(ts);
+            // playback.setCursor(ts);
             updateClock(ts);
             $('#time-slider').slider('value', ts);
         }
@@ -278,13 +326,13 @@ $(function () {
 
 
     $('#timepicker-input').val($('#cursor-time').text());
-    //
+
     // $('#timepicker').timepicker({
     //     showSeconds: true
     // });
     // $('#timepicker').datetimepicker('setTime',
     //     new Date(dateTime).toTimeString());
-    //
+
     // $('#timepicker').datetimepicker().on('changeTime.timepicker', function(e) {
     //     var date = $('#calendar').datepicker('getDate');
     //     var ts = combineDateAndTime(date, e.time);
@@ -297,24 +345,25 @@ $(function () {
 
 
     // insert default values to settings
-    $("input[name=default_headway]").val(defaultValues['headway']);
-    $("input[name=default_length]").val(defaultValues['length']);
-    $("input[name=default_speed]").val(defaultValues['speed']);
-    $("input[name=default_ready]").val(defaultValues['ready']);
-    $("input[name=default_due]").val(defaultValues['due']);
-    $("input[name=default_time]").val(defaultValues['time']);
-    for (let i = 0; i < algorithms.length; i++) {
+    $("input[data-field=default_k]").val(defaultValues['k']);
+    $("input[data-field=default_headway]").val(defaultValues['headway']);
+    $("input[data-field=default_length]").val(defaultValues['length']);
+    $("input[data-field=default_speed]").val(defaultValues['speed']);
+    $("input[data-field=default_ready]").val(defaultValues['ready']);
+    $("input[data-field=default_due]").val(defaultValues['due']);
+    $("input[data-field=default_time]").val(defaultValues['time']);
+    for (let i = 0; i < methods.length; i++) {
         let opt = document.createElement('option');
-        opt.value = algorithms[i];
+        opt.value = methods[i];
         opt.id = 'option_'+i;
         opt.className = 'option';
-        opt.innerHTML = algorithms[i];
+        opt.innerHTML = methods[i];
         $('.selectpicker').append(opt);
     }
-    $("#option_"+algorithms.indexOf(defaultValues['algorithm'])).attr("selected", "selected");
+    $("#option_"+methods.indexOf(defaultValues['method'])).attr("selected", "selected");
 
     $('.selectpicker').change(function () {
-        defaultValues['algorithm']=this.value;
+        defaultValues['method']=this.value;
     });
 
     $('#add-btn').click(function () {
@@ -328,16 +377,7 @@ $(function () {
         convoys[convoyID]['due']= defaultValues['due'];
         mapObjects[convoyID]= [];
 
-        $('.modify').click(function(){
-            modifyNumbers(this, convoyID);
-        });
 
-        $('.input-number').focusin(function(){
-            $(this).data('oldValue', $(this).val());
-        });
-        $('.input-number').change(function() {
-            modifyInput(this, convoyID);
-        });
 
         $("#origin_" + convoyID +",#destination_" + convoyID).each(function() {
             $(this).click(function () {
@@ -345,7 +385,9 @@ $(function () {
                 map.on('click', (function(e) {
                     addMarker(e, id);
                     map.off('click');
+                    console.log('rr')
                 }));
+                console.log('sss')
                 $(this).off('click');
             });
         });
@@ -363,6 +405,20 @@ $(function () {
                 map.removeLayer(mapObjects[id]['destination']);
             }
             delete mapObjects[id];
+
+            // close results and playback if convoys were removed from calculated set
+            if (paths[id]){
+                // if playing, then stop
+                if(isPlaying) {
+                    stopMarkers();
+                    resetPlay();
+                }
+                paths = {};
+                times={};
+                $('.play').addClass("hidden");
+                $('#stop').addClass("hidden");
+                $('#stat-menu').addClass("hidden");
+            }
 
             // reorder convoy numbering
             let old_key = parseInt(id);
@@ -389,7 +445,7 @@ $(function () {
             if(!$('#calc-btn').hasClass("hidden")){
                 let removeCalculate = true;
                 for (let convoyID in convoys) {
-                    if(Object.keys(convoys[convoyID]).length == 6){
+                    if(Object.keys(convoys[convoyID]).length === 6){
                         removeCalculate = false;
                         break;
                     }
@@ -400,13 +456,6 @@ $(function () {
                     $('.sidebar-table').css('top',top);
                 }
             }
-            // remove run button, if present
-            if(!$('#run-btn').hasClass("hidden")){
-                paths = {}
-                $('#run-btn').addClass("hidden");
-                let top = parseInt($('.sidebar-table').css('top').slice(0, -2))-40;
-                $('.sidebar-table').css('top',top);
-            }
             convoyID--;
         });
     });
@@ -414,6 +463,17 @@ $(function () {
 
 
     $('#calc-btn').click(function () {
+
+        // start spinner
+        let spinner = new Spinner().spin($('#map')[0]);
+
+
+        resetPlay();
+        $('#stop').addClass('hidden');
+        $('.play').addClass('hidden');
+        $('#stat-menu').addClass('hidden');
+
+
         //stop clock
         clearInterval(dateTimeCounter);
         let date = new Date(moment($('#cursor-date').text()).format('YYYY, MM, DD'));
@@ -427,18 +487,22 @@ $(function () {
                 inputConvoys[convoyID] = convoys[convoyID];
             }
         }
-        let input = [inputConvoys, defaultValues['headway'], defaultValues['algorithm']];
-        // console.log(input);
+        let input = [inputConvoys, defaultValues['headway'], defaultValues['k'], defaultValues['method']];
+        console.log(input);
         getPaths(input, function(output){
             if (output.startsWith('error')){
                 console.log(output);
-                delete result;
+                alert(output.split('-')[1]);
+                $('.spinner').remove();
             }
             else {
+                console.log(output)
                 result = JSON.parse(output);
                 console.log(result);
                 startOrder = [];
                 let featureGroup = [];
+                let startMoment;
+                let endMoment;
                 for (let i = 0; i < result.length; i++) {
                     let path = result[i][0];
                     let travelTime = result[i][1]*3600000;
@@ -454,12 +518,18 @@ $(function () {
                     times[convoyID]['start']= startTime;
                     times[convoyID]['pass']= passingTime;
                     startOrder.push(convoyID);
+                    if (i === 0){
+                        startMoment = startTime;
+                    }
+                    else if (i === result.length-1){
+                        endMoment = startTime + passingTime + travelTime;
+                    }
                 }
+                duration = endMoment - startMoment;
                 mapObjects['group'] = L.featureGroup(featureGroup);
-                $('#run-btn').removeClass("hidden");
+                $('#stat-menu').removeClass("hidden");
                 $('.play').removeClass("hidden");
-                $('.sidebar-table').css('top','180px');
-                $('.nav > li.dropdown').css('left','10px');
+                $('.spinner').remove();
             }
         });
     });
@@ -499,6 +569,18 @@ $('#run-btn').click(function () {
     // let myjson = JSON.stringify(mapPaths);
     // writePaths(myjson);
     // init_video(tracks);
+});
+
+$('.modify').click(function(){
+    modifyNumbers(this, convoyID);
+});
+
+$('.input-number').focusin(function(){
+    $(this).data('oldValue', $(this).val());
+});
+
+$('.input-number').change(function() {
+    modifyInput(this, convoyID);
 });
 
 $('#clock-btn').click(function (){
@@ -544,6 +626,18 @@ function addConvoy(convoyID){
     table.find('thead').removeClass("hidden");
     table.append(row);
     $('#ID_' + convoyID).text(convoyID+'.');
+
+    $('.modify').click(function(){
+        modifyNumbers(this, convoyID);
+    });
+
+    $('.input-number').focusin(function(){
+        $(this).data('oldValue', $(this).val());
+    });
+
+    $('.input-number').change(function() {
+        modifyInput(this, convoyID);
+    });
 }
 
 
@@ -551,25 +645,26 @@ function addConvoy(convoyID){
 function modifyNumbers(button, convoyID){
     let fieldID = $(button).attr('data-field');
     let fieldName = fieldID.split('_')[0];
+    let defaultName = fieldID.split('_')[1];
     let type      = $(button).attr('data-type');
     let input = $("input[data-field='"+fieldID+"']");
     let currentVal = parseInt(input.val());
     if (!isNaN(currentVal)) {
-        if(type == 'minus') {
+        if(type === 'minus') {
             if(currentVal > input.attr('min')) {
                 input.val(currentVal - 1).change();
-                changeValue(fieldName, convoyID, parseInt(input.val()))
+                changeValue(fieldName,defaultName, convoyID, parseInt(input.val()))
             }
-            if(parseInt(input.val()) == parseInt(input.attr('min'))) {
+            if(parseInt(input.val()) === parseInt(input.attr('min'))) {
                 $(button).attr('disabled', true);
             }
 
-        } else if(type == 'plus') {
+        } else if(type === 'plus') {
             if(currentVal < input.attr('max')) {
                 input.val(currentVal + 1).change();
-                changeValue(fieldName, convoyID, parseInt(input.val()));
+                changeValue(fieldName, defaultName, convoyID, parseInt(input.val()));
             }
-            if(parseInt(input.val()) == input.attr('max')) {
+            if(parseInt(input.val()) === input.attr('max')) {
                 $(button).attr('disabled', true);
             }
 
@@ -583,22 +678,23 @@ function modifyInput(input, convoyID){
     input = $(input);
     let minValue =  parseInt(input.attr('min'));
     let maxValue =  parseInt(input.attr('max'));
-    let valueCurrent = parseInt(input.val());
+    let valueCurrent = parseFloat(input.val());
     let fieldID = input.attr('data-field');
     let fieldName = fieldID.split('_')[0];
+    let defaultName = fieldID.split('_')[1];
     if(valueCurrent >= minValue && valueCurrent <= maxValue) {
         $(".modify[data-type='minus'][data-field='"+fieldID+"']").removeAttr('disabled');
         $(".modify[data-type='plus'][data-field='"+fieldID+"']").removeAttr('disabled');
-        changeValue(fieldName, convoyID, parseInt(input.val()));
+        changeValue(fieldName, defaultName, convoyID, parseFloat(input.val()));
     } else {
         input.val(input.data('oldValue'));
     }
 }
 
 
-function changeValue(fieldName, convoyID, value){
-    if(fieldName.startsWith('default')){
-        defaultValues[fieldName] = value;
+function changeValue(fieldName, defaultName, convoyID, value){
+    if(fieldName === 'default'){
+        defaultValues[defaultName] = value;
     }
     else{
         convoys[convoyID][fieldName] = value
@@ -607,36 +703,7 @@ function changeValue(fieldName, convoyID, value){
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-$(document).on("click", ".feature-row", function(e) {
-    $(document).off("mouseout", ".feature-row", clearHighlight);
-    sidebarClick(parseInt($(this).attr("id"), 10));
-});
-
-if ( !("ontouchstart" in window) ) {
-    $(document).on("mouseover", ".feature-row", function(e) {
-        highlight.clearLayers().addLayer(L.circleMarker([$(this).attr("lat"), $(this).attr("lng")], highlightStyle));
-    });
-}
-
-$(document).on("mouseout", ".feature-row", clearHighlight);
+// menu buttons
 
 $("#about-btn").click(function() {
     $("#aboutModal").modal("show");
@@ -657,36 +724,11 @@ $("#full-extent-btn").click(function() {
     return false;
 });
 
-$("#legend-btn").click(function() {
-    $("#legendModal").modal("show");
-    $(".navbar-collapse.in").collapse("hide");
-    return false;
-});
-
-$("#login-btn").click(function() {
-    $("#loginModal").modal("show");
-    $(".navbar-collapse.in").collapse("hide");
-    return false;
-});
 
 $('#list-menu, .sidebar-hide-btn').click(function() {
     let statbar = $('.statbar');
     if (!statbar.hasClass('closed')){
-        for (let i = 0; i < startOrder.length; i++) {
-            convoyID = startOrder[i];
-            if ($('#checkbox_' + convoyID).is(':checked')){
-                map.removeLayer(mapObjects[convoyID]['path']);
-            }
-            else{
-                mapObjects[convoyID]['origin'].addTo(map);
-                mapObjects[convoyID]['destination'].addTo(map)
-            }
-        }
-        $(".stat-row").remove();
-        statbar.toggleClass("closed");
-        $('.navbar-toggle-btn').toggleClass('hidden');
-        $('#zoom_group').toggleClass('hidden');
-        animateStatbar(0);
+        toggleStatbar();
     }
     animateSidebar();
     console.log($('#features').hasClass('hidden'));
@@ -695,13 +737,23 @@ $('#list-menu, .sidebar-hide-btn').click(function() {
 });
 
 $('#stat-menu, .navbar-toggle-btn').click(function() {
+    if(isPlaying) {
+        stopMarkers();
+        resetPlay();
+    }
+    toggleStatbar();
+});
 
-    if(startOrder.length > 0) {
+
+function toggleStatbar() {
+    if (startOrder.length > 0) {
         let statbar = $('.statbar');
-        let  rows = 1;
+        let rows = 1;
         statbar.removeClass("hidden");
-        let order = startOrder.sort(function(a, b){return a-b});
-        if(statbar.hasClass("closed")){
+        let order = startOrder.sort(function (a, b) {
+            return a - b
+        });
+        if (statbar.hasClass("closed")) {
             for (let i = 0; i < order.length; i++) {
                 convoyID = order[i];
                 mapObjects[convoyID]['path'].addTo(map);
@@ -710,12 +762,12 @@ $('#stat-menu, .navbar-toggle-btn').click(function() {
             }
             let sidebar = $('#features');
             $('.navbar-fixed-bottom').addClass("hidden");
-            if(!sidebar.hasClass("hidden")){
+            if (!sidebar.hasClass("hidden")) {
                 animateSidebar();
                 sidebar.addClass("hidden");
             }
         }
-        else{
+        else {
             for (let i = 0; i < order.length; i++) {
                 convoyID = order[i];
                 map.removeLayer(mapObjects[convoyID]['path']);
@@ -725,11 +777,11 @@ $('#stat-menu, .navbar-toggle-btn').click(function() {
         statbar.toggleClass("closed");
         $('.navbar-toggle-btn').toggleClass('hidden');
         $('#zoom_group').toggleClass('hidden');
-        animateStatbar(rows-1);
+        animateStatbar(rows - 1);
         return false;
     }
+}
 
-});
 
 
 function animateSidebar() {
@@ -757,7 +809,7 @@ function animateStatbar(nr) {
         calcHeight = "180px";
     }
     let statbar = $('.statbar');
-    let toggleHeight = statbar.height() == "0px" ? "0px" : calcHeight;
+    let toggleHeight = statbar.height() === "0px" ? "0px" : calcHeight;
     statbar.animate({
         height: toggleHeight
     }, function() {
@@ -850,37 +902,65 @@ function addStatRow(convoyID){
 }
 
 $('#zoom_group').click(function () {
-    console.log("shddsds")
     map.fitBounds(mapObjects['group'].getBounds());
 });
 
-// $('#stat-menu > li > a').click(function() {
-//     console.log("sss")
-//     $('.navmenu').offcanvas('toggle');
-// });
-
-function drawLine(path, color) {
-    L.polyline(path, {color: color, weight: 5}).addTo(map);
-}
 
 function drawPath(path, color, duration, length){
-  let pathLine = L.polyline([], {color: color, weight: 5}).addTo(map);
-  let marker = L.Marker.movingMarker(path.getLatLngs(), duration, {opacity: 0}).addTo(map);
+  let pathLine = L.polyline([], {color: color, weight: 5});
+  let marker = L.Marker.movingMarker(path.getLatLngs(), duration, {opacity: 0});
+  playGroup.addLayer(pathLine);
+  playGroup.addLayer(marker);
+  movingMarkers.push(marker);
   marker.on('move', function() {
     pathLine.addLatLng(marker.getLatLng());
     pathLine.redraw();
   });
   marker.start();
   setTimeout(function(){
-    let marker2 = L.Marker.movingMarker(path.getLatLngs(), duration, {opacity: 0}).addTo(map);
+    let marker2 = L.Marker.movingMarker(path.getLatLngs(), duration, {opacity: 0});
+    movingMarkers.push(marker2);
+    playGroup.addLayer(marker2);
     marker2.on('move', function() {
-      pathLine.getLatLngs().splice(0,1);
-      pathLine.redraw();
+        pathLine.getLatLngs().splice(0,1);
+        pathLine.redraw();
+    });
+    marker2.on('end', function() {
+        counter++;
+        // console.log(startOrder.length);
+        // console.log(counter);
+        if(counter === startOrder.length){
+            resetPlay();
+            $('#stop').addClass("hidden");
+            $('#playback').removeClass("hidden");
+            counter = 0;
+        }
     });
     marker2.start();
   }, length);
 }
 
+
+function pauseMarkers() {
+    for (let i = 0; i < movingMarkers.length; i++) {
+        movingMarkers[i].pause();
+    }
+}
+function resumeMarkers() {
+    for (let i = 0; i < movingMarkers.length; i++) {
+        movingMarkers[i].resume();
+    }
+}
+
+function stopMarkers() {
+    for (let i = 0; i < movingMarkers.length; i++) {
+        movingMarkers[i].stop();
+    }
+}
+
+function createTimestamps(){
+
+}
 
 function addMarker(e, id) {
     let parts = id.split('_');
@@ -1013,8 +1093,8 @@ function triggerFired(trigger) {
 }
 
 function combineDateAndTime(date, time) {
-    console.log(date,time)
-    let parts = time.split(':')
+    // console.log(date,time)
+    let parts = time.split(':');
     let yr = date.getFullYear();
     let mo = date.getMonth();
     let dy = date.getDate();
@@ -1022,7 +1102,7 @@ function combineDateAndTime(date, time) {
     let min = parseInt(parts[1]);
     let sec = parseInt(parts[2]);
 
-    console.log(time, yr, hr, min, sec)
+    // console.log(time, yr, hr, min, sec)
     // the calendar uses hour and the timepicker uses hours...
     // var hr = time.hours || time.hour;
     // if (time.meridian == 'PM' && hr != 12) hr += 12;

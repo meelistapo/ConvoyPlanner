@@ -41,6 +41,7 @@
     "jquery-ui-dist": "^1.12.1",
     "leaflet": "^1.0.3",
     "leaflet-knn": "^0.1.0",
-    "moment": "^2.18.1"
+    "moment": "^2.18.1",
+    "spin.js": "^2.3.2"
   }
 }

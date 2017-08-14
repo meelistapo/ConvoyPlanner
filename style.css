@@ -322,20 +322,30 @@ input {
     margin-bottom: 0;
 }
 
-/*#play-pause{*/
-    /*float: right;*/
-    /*!*left: 50px;*!*/
-/*}*/
+.play{
+    float: right !important;
+}
+
+.play-btn{
+    width: 60px;
+    margin-top: 15px;
+}
+#stop{
+    margin-left: 12px;
+    margin-right: 12px;
+    float: right;
+}
 
 .navbar-nav{
     width: 100%;
+    /*overflow: auto;*/
 }
 
-#time-slider {
-    left:10px;
-    width:350px;
-    margin:5px 0px ;
-}
+/*#time-slider {*/
+    /*left:10px;*/
+    /*width:340px;*/
+    /*margin:5px 0px ;*/
+/*}*/
 
 #speed-input{
     top: 140px;
@@ -359,6 +369,9 @@ input {
     color: black !important;
 }
 
+.clock{
+    float: right !important;
+}
 /*.navbar .btn,*/
 /*.navbar .btn-group {*/
     /*margin-top: 0;*/
@@ -367,9 +380,9 @@ input {
 /*}*/
 
 .navbar .nav > li.dropdown {
-    padding: 0px;
-    left: 460px;
+    padding-top: 0px;
     text-align: center;
+    border: none;
 }
 
 .navbar .nav > li{
