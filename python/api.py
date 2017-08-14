@@ -1,9 +1,8 @@
 import sys
 import zerorpc
 import gevent
+import signal
 from collection import collect
-from exact import calculate
-# import python.exact
 
 
 
@@ -11,16 +10,13 @@ class ConvoyApi(object):
 
     def generatePaths(self, data):
         try:
-            return collect(data)
-            # return '1 [164 3583 2960] 0.2580022264992 0|3 [1660 2557 704 813] 0.06120995327724 0|2 [3338 3583 3800] 0.43484810014 0.07506187486113335|'
-            # return calculate(data)
+            result = False
+            while not result:
+                gevent.sleep(1)
+                result = collect(data)
+            return result
         except Exception as e:
-
-            # return  traceback.print_exc()
-            # return  sys.exc_info()[0]
-            # traceback.print_tb(e.__traceback__)
             return e
-        """based on the input text, return the int result"""
 
     def echo(self, text):
         """echo any text"""
@@ -41,7 +37,10 @@ def main():
     s = zerorpc.Server(ConvoyApi())
     s.bind(addr)
     print('start running on {}'.format(addr))
+    gevent.signal(signal.SIGTERM, s.stop)
     gevent.spawn(s.run())
+    print("zpc stopped")
+    sys.stdout.flush()
 
 
 if __name__ == '__main__':
