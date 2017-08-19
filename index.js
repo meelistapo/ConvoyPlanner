@@ -479,8 +479,6 @@ $(function () {
         let date = new Date(moment($('#cursor-date').text()).format('YYYY, MM, DD'));
         dateTime= combineDateAndTime(date, $('#cursor-time').text());
 
-        // let data = JSON.stringify(convoys);
-        // let data = "ddd"
         let inputConvoys={};
         for (let convoyID in convoys) {
             if (Object.keys(convoys[convoyID]).length == 6) {
@@ -537,39 +535,19 @@ $(function () {
 });
 
 $('#run-btn').click(function () {
-    // animateSidebar();
     if (result){
-        // let currentTime = 0;
         for (let i = 0; i < startOrder.length; i++) {
             let convoyID = startOrder[i];
             let travelTime = times[convoyID]['travel']/defaultValues['playback'];
             let startTime = times[convoyID]['start']/defaultValues['playback'];
             let passingTime = times[convoyID]['pass']/defaultValues['playback'];
-            // let runningStartTime = startTime - currentTime;
-            // currentTime = startTime;
             let color = hex[mapObjects[convoyID]['color']];
             start(startTime, paths[convoyID], color, travelTime, passingTime);
         }
     }
-
-
-
-    // for (let convoyID in result) {
-    //     let data = result[convoyID];
-
-        // console.log(pathNodes)
-        // let path = constructPath(pathNodes);
-        // mapPaths[convoyID] = {
-        //     "type": "LineString",
-        //     "coordinates": path
-        // };
-        // let color = mapObjects[convoyID]['color'];
-        // drawPath(L.polyline(path), color, 5000, 5000);
-    // }
-    // let myjson = JSON.stringify(mapPaths);
-    // writePaths(myjson);
-    // init_video(tracks);
 });
+
+// settings menu modifying options
 
 $('.modify').click(function(){
     modifyNumbers(this, convoyID);
@@ -583,10 +561,10 @@ $('.input-number').change(function() {
     modifyInput(this, convoyID);
 });
 
+
+
 $('#clock-btn').click(function (){
     clearInterval(dateTimeCounter);
-    // $('#timepicker').html(+L.Playback.Util.TimeStr(dateTime));
-    // $('#date-input').html(L.Playback.Util.DateStr(dateTime));
 });
 
 $('#now').click(function (){
@@ -603,23 +581,23 @@ function addConvoy(convoyID){
         '<td><button type="button" class="btn btn-lg btn-default" id = "destination_' + convoyID+'" title="Add destination"><span class="glyphicon glyphicon-stop"></button></td>' +
         '<td>' +
         '<input type="number"  name = "length" min="1" max="99999" value = "'+ defaultValues['length'] +'" data-field="length_' + convoyID +'" class="input center merge-bottom-input input-number convoy-input"><div class="btn-group btn-block">' +
-        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify" data-type="minus" data-field="length_' + convoyID +'"><span class="glyphicon glyphicon-minus"></span></button>' +
-        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify" data-type="plus" data-field="length_' + convoyID +'"><span class="glyphicon glyphicon-plus"></span></button></div>' +
+        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify_'+convoyID+'" data-type="minus" data-field="length_' + convoyID +'"><span class="glyphicon glyphicon-minus"></span></button>' +
+        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify_'+convoyID+'" data-type="plus" data-field="length_' + convoyID +'"><span class="glyphicon glyphicon-plus"></span></button></div>' +
         '</td>' +
         '<td>' +
         '<input type="number" name = "speed" min="1"   max=  "999" value = "'+ defaultValues['speed'] +'" data-field="speed_' + convoyID +'" class="input center merge-bottom-input input-number convoy-input"><div class="btn-group btn-block">' +
-        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify" data-type="minus" data-field="speed_' + convoyID +'"><span class="glyphicon glyphicon-minus"></span></button>' +
-        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify" data-type="plus" data-field="speed_' + convoyID +'"><span class="glyphicon glyphicon-plus"></span></button></div>' +
+        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify_'+convoyID+'" data-type="minus" data-field="speed_' + convoyID +'"><span class="glyphicon glyphicon-minus"></span></button>' +
+        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify_'+convoyID+'" data-type="plus" data-field="speed_' + convoyID +'"><span class="glyphicon glyphicon-plus"></span></button></div>' +
         '</td>' +
         '<td>' +
         '<input type="number" name = "ready" min="0"   max=  "99" value = "'+ defaultValues['ready'] +'" data-field="ready_' + convoyID +'" class="input center merge-bottom-input input-number convoy-input"><div class="btn-group btn-block">' +
-        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify" data-type="minus" data-field="ready_' + convoyID +'"><span class="glyphicon glyphicon-minus"></span></button>' +
-        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify" data-type="plus" data-field="ready_' + convoyID +'"><span class="glyphicon glyphicon-plus"></span></button></div>' +
+        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify_'+convoyID+'" data-type="minus" data-field="ready_' + convoyID +'"><span class="glyphicon glyphicon-minus"></span></button>' +
+        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify_'+convoyID+'" data-type="plus" data-field="ready_' + convoyID +'"><span class="glyphicon glyphicon-plus"></span></button></div>' +
         '</td>' +
         '<td>' +
         '<input type="number" name = "due" min="1"   max=  "99" value = "'+ defaultValues['due'] +'"  data-field="due_' + convoyID +'" class="input center merge-bottom-input input-number convoy-input"><div class="btn-group btn-block">' +
-        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify" data-type="minus" data-field="due_' + convoyID +'"><span class="glyphicon glyphicon-minus"></span></button>' +
-        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify" data-type="plus" data-field="due_' + convoyID +'"><span class="glyphicon glyphicon-plus"></span></button></div>' +
+        '<button type="button" class="btn btn-xs btn-default merge-top-left-button modify_'+convoyID+'" data-type="minus" data-field="due_' + convoyID +'"><span class="glyphicon glyphicon-minus"></span></button>' +
+        '<button type="button" class="btn btn-xs btn-basic merge-top-right-button modify_'+convoyID+'" data-type="plus" data-field="due_' + convoyID +'"><span class="glyphicon glyphicon-plus"></span></button></div>' +
         '</td>' +
         '<td><button type="button" class="btn btn-lg btn-danger" id = "delete_' + convoyID+'" title="Delete row"><span class="glyphicon glyphicon-minus"></span></td></tr>';
     let table = $('#convoy-list');
@@ -627,7 +605,10 @@ function addConvoy(convoyID){
     table.append(row);
     $('#ID_' + convoyID).text(convoyID+'.');
 
-    $('.modify').click(function(){
+    // convoys menu modifying options
+
+    $('.modify_'+convoyID).click(function(){
+        console.log(this)
         modifyNumbers(this, convoyID);
     });
 
@@ -648,7 +629,9 @@ function modifyNumbers(button, convoyID){
     let defaultName = fieldID.split('_')[1];
     let type      = $(button).attr('data-type');
     let input = $("input[data-field='"+fieldID+"']");
+    console.log(input);
     let currentVal = parseInt(input.val());
+    console.log("lajter!",  currentVal);
     if (!isNaN(currentVal)) {
         if(type === 'minus') {
             if(currentVal > input.attr('min')) {

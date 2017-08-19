@@ -3,7 +3,6 @@ from gurobipy import *
 import networkx as nx
 import numpy as np
 import operator
-import json
 import copy
 
 '''
