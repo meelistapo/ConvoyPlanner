@@ -2,9 +2,9 @@ import json
 import traceback
 import networkx
 import operator
-from exact import best_choice
-from milp import calculate
-from fixed import calculate as calculate1
+from exact import calculate
+from milp  import calculate as calculate1
+from fixed import calculate as calculate2
 
 
 
@@ -49,20 +49,20 @@ def collect(data):
     solution = "no solution"
     graph = create_graph()
 
-    if method.startswith('Exact'):
+    if method.startswith('BB'):
         for convoyID, features in convoy_data:
             convoy = Convoy(convoyID, features["origin"], features["destination"], features["length"]/1000, features["speed"], features["ready"],features["due"])
             convoys.append(convoy)
         try:
-            solution = best_choice(graph, convoys, headway, k, method)
+            solution = calculate(graph, convoys, headway, k, method)
         except:
             solution = str(traceback.format_exc())
-    elif method == "Brute-force" or method == "Fixed-order":
+    elif method == "EFO" or method == "PFO":
         for convoyID, features in convoy_data:
             convoy = Convoy(convoyID, features["origin"], features["destination"], features["length"]/1000, features["speed"], features["ready"],features["due"])
             convoys.append(convoy)
         try:
-            solution = calculate1(graph, convoys, headway, method)
+            solution = calculate2(graph, convoys, headway, method)
         except:
             solution = str(traceback.format_exc())
     elif method.startswith('MILP'):
@@ -73,7 +73,10 @@ def collect(data):
             speed.append(features["speed"])
             ready.append(features["ready"])
             due.append(features["due"])
-        solution = calculate(graph, origin, destination, length, speed, ready, due, headway, k, method)
+        try:
+            solution = calculate1(graph, origin, destination, length, speed, ready, due, headway, k, method)
+        except:
+            solution = str(traceback.format_exc())
     # elif method == 'Input':
         # insert paths here
     return json.dumps(solution)

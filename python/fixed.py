@@ -170,7 +170,7 @@ def calculate(g, convoys, headway, method):
     paths = find_feasible_paths(g, convoys)
     best_collection = None
     best_ub = np.math.inf
-    if method == 'Brute-force':
+    if method == 'EFO':
         ordering = [list(item) for item in itertools.permutations(paths)]
         for o in ordering:
             ub, collection = solve(g, headway, o)
@@ -178,7 +178,7 @@ def calculate(g, convoys, headway, method):
                 best_ub = ub
                 best_collection = collection
         return best_collection
-    elif method == 'Fixed-order':
+    elif method == 'PFO':
         ub, collection = solve(g, headway, paths)
         return collection
 

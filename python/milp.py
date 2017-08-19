@@ -10,18 +10,56 @@ import copy
 Mixed Integer Linear Programming Methods MILP-1, MILP-2 and MILP-3
 '''
 
-def load_json(filename):
-    with open(filename) as json_data:
-        data = json.load(json_data)
-    json_data.close()
-    return data
 
+def calculate(graph, origin, destination, length, speed, ready, due, headway, k, method):
+    convoy_count = len(origin)
+    if method == 'MILP - 1':
+        node_count = graph.number_of_nodes()
+        distances = nx.to_numpy_matrix(graph, weight="weight")
+        result = solve(origin, destination, length, ready, due, distances, speed, node_count, convoy_count, headway, node_count*10, k, [], method)
 
-def create_graph():
-    edges = load_json('../data/edges.json')
-    graph = nx.Graph()
-    graph.add_weighted_edges_from(edges)
-    return graph
+    else:
+        path_collection, used_nodes = get_k_shortest_paths(graph, origin, destination, k)
+        graph_small = copy.deepcopy(graph)
+        keymap = {}
+        for v in graph_small.nodes():
+            if v not in used_nodes:
+                graph_small.remove_node(v)
+        for v in graph_small.nodes():
+            keymap[graph_small.nodes().index(v)] = v
+        node_count = graph_small.number_of_nodes()
+        distances = nx.to_numpy_matrix(graph_small, weight="weight")
+        new_origin = [graph_small.nodes().index(origin[i]) for i in range(len(origin))]
+        new_destination = [graph_small.nodes().index(destination[i]) for i in range(len(origin))]
+        new_path_collection = []
+
+        for paths in path_collection:
+            new_paths =[]
+            for path in paths:
+                new_path = []
+                for node in path:
+                    new_path.append(graph_small.nodes().index(node))
+                new_paths.append(new_path)
+            new_path_collection.append(new_paths)
+
+        pre_result = solve(new_origin, new_destination, length, ready, due, distances, speed, node_count, convoy_count, headway, node_count*10, k, new_path_collection, method)
+
+        result={c:{} for c in range(convoy_count)}
+        for c, n in pre_result.items():
+            for k,v in n.items():
+                result[c][keymap[k]] = v
+
+    solution = []
+    ub = 0
+    for k,v in result.items():
+        path = [e for e,f in sorted(v.items(), key=operator.itemgetter(1))]
+        travel_time = result[k][path[-1]] - result[k][path[0]]
+        start_time = result[k][path[0]]
+        solution.append([path, travel_time, start_time, k+1])
+        ub += travel_time+start_time
+    solution = sorted(solution, key=operator.itemgetter(3))
+
+    return solution
 
 
 def get_k_shortest_paths(graph, origin, destination, k):
@@ -32,6 +70,7 @@ def get_k_shortest_paths(graph, origin, destination, k):
         for p in paths[-1]:
             used_nodes = used_nodes.union(set(p))
     return paths, used_nodes
+
 
 def solve(O, D, L, R, F, E, S, m, c, h, M, k, P, method):
     """
@@ -217,54 +256,3 @@ def solve(O, D, L, R, F, E, S, m, c, h, M, k, P, method):
                 # print(v.varName, v.x)
                 result[int(convoy)][int(node)]= float(v.x)
     return result
-
-
-def calculate(graph, origin, destination, length, speed, ready, due, headway, k, method):
-    convoy_count = len(origin)
-    if method == 'MILP - 1':
-        node_count = graph.number_of_nodes()
-        distances = nx.to_numpy_matrix(graph, weight="weight")
-        result = solve(origin, destination, length, ready, due, distances, speed, node_count, convoy_count, headway, node_count*10, k, [], method)
-
-    else:
-        path_collection, used_nodes = get_k_shortest_paths(graph, origin, destination, k)
-        graph_small = copy.deepcopy(graph)
-        keymap = {}
-        for v in graph_small.nodes():
-            if v not in used_nodes:
-                graph_small.remove_node(v)
-        for v in graph_small.nodes():
-            keymap[graph_small.nodes().index(v)] = v
-        node_count = graph_small.number_of_nodes()
-        distances = nx.to_numpy_matrix(graph_small, weight="weight")
-        new_origin = [graph_small.nodes().index(origin[i]) for i in range(len(origin))]
-        new_destination = [graph_small.nodes().index(destination[i]) for i in range(len(origin))]
-        new_path_collection = []
-
-        for paths in path_collection:
-            new_paths =[]
-            for path in paths:
-                new_path = []
-                for node in path:
-                    new_path.append(graph_small.nodes().index(node))
-                new_paths.append(new_path)
-            new_path_collection.append(new_paths)
-
-        pre_result = solve(new_origin, new_destination, length, ready, due, distances, speed, node_count, convoy_count, headway, node_count*10, k, new_path_collection, method)
-
-        result={c:{} for c in range(convoy_count)}
-        for c, n in pre_result.items():
-            for k,v in n.items():
-                result[c][keymap[k]] = v
-
-    solution = []
-    ub = 0
-    for k,v in result.items():
-        path = [e for e,f in sorted(v.items(), key=operator.itemgetter(1))]
-        travel_time = result[k][path[-1]] - result[k][path[0]]
-        start_time = result[k][path[0]]
-        solution.append([path, travel_time, start_time, k+1])
-        ub += travel_time+start_time
-    solution = sorted(solution, key=operator.itemgetter(3))
-
-    return solution
