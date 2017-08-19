@@ -364,6 +364,13 @@ $(function () {
 
     $('.selectpicker').change(function () {
         defaultValues['method']=this.value;
+        if (this.value === 'EFO' || this.value === 'PFO'|| this.value === 'Input'){
+            $('.alter-paths').addClass('invisible');
+
+        }
+        else{
+            $('.alter-paths').removeClass('invisible');
+        }
     });
 
     $('#add-btn').click(function () {
@@ -910,8 +917,6 @@ function drawPath(path, color, duration, length){
     });
     marker2.on('end', function() {
         counter++;
-        // console.log(startOrder.length);
-        // console.log(counter);
         if(counter === startOrder.length){
             resetPlay();
             $('#stop').addClass("hidden");

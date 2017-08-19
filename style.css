@@ -620,3 +620,7 @@ a.accordion-toggle {
     -moz-text-align-last: center;
     text-align-last: center;
 }
+
+.invisible{
+    display: none;
+}
