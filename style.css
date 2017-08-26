@@ -3,9 +3,11 @@ html, body, #container {
     width: 100%;
     overflow: hidden;
 }
+
 body {
     padding-top: 50px;
 }
+
 input[type="radio"], input[type="checkbox"] {
     margin: 0;
 }
@@ -23,11 +25,13 @@ td {
     float: left;
     position: relative;
 }
+
 #map {
     width: auto;
     height: 100%;
     box-shadow: 0 0 10px rgba(0,0,0,0.5);
 }
+
 #loading {
     position: absolute;
     width: 220px;
@@ -37,6 +41,7 @@ td {
     margin: -10px 0 0 -110px;
     z-index: 20001;
 }
+
 #features {
     margin: 0px;
     border: none;
@@ -47,18 +52,23 @@ td {
 .sidebar-hide-btn {
     margin-top: -2px;
 }
+
 #aboutTabsContent {
     padding-top: 10px;
 }
+
 .progress-bar-full {
     width: 100%;
 }
+
 .white {
     color: #FFFFFF;
 }
+
 .panel-heading{
     width:100%;
 }
+
 .panel-body{
     width: 460px;
     padding-left: 10px;
@@ -89,6 +99,7 @@ td {
 .settings-align{
     text-align: center;
 }
+
 .settings{
     float: left;
 }
@@ -97,6 +108,7 @@ td {
     cursor: pointer;
     width: 250px;
 }
+
 .nr{
     width: 60px !important;
 }
@@ -110,6 +122,7 @@ td {
     padding-left: 10px;
     padding-right: 15px;
 }
+
 .statbar-table {
     position: absolute;
     width:1000px;
@@ -131,7 +144,6 @@ td {
     margin-top: 5px;
 }
 
-
 .navbar-toggle-btn{
     margin: 10px !important;
 }
@@ -139,13 +151,11 @@ td {
 #zoom_group{
     float:right;
     margin: 10px !important;
-
 }
 
 #stat-heading{
     border-bottom: 2px solid #ccc;
     padding-bottom: 5px !important;
-
 }
 
 .nav-footer{
@@ -155,6 +165,7 @@ td {
     width: 1000px;
     left:200px
 }
+
 .dropdown-menu{
     text-align: center !important;
     z-index: 1000;
@@ -163,13 +174,16 @@ td {
 .leaflet-control-layers {
     overflow: auto;
 }
+
 .leaflet-control-layers label {
     font-weight: normal;
     margin-bottom: 0px;
 }
+
 .leaflet-control-layers-list input[type="radio"], input[type="checkbox"] {
     margin: 2px;
 }
+
 .table {
     margin-bottom: 0px;
 }
@@ -177,9 +191,6 @@ td {
 .statbar {
     position: relative;
     height: 0px;
-    /*display: block;*/
-    /*max-height: 100%;*/
-
 }
 
 #stat-list tr  th{
@@ -195,22 +206,25 @@ td {
     font-size: 25px;
     color: #FFFFFF;
 }
+
 .navbar-collapse.in {
     overflow-y: hidden;
 }
+
 .navbar-header .navbar-icon-container {
     margin-right: 15px;
 }
+
 .navbar-header .navbar-icon {
     line-height: 50px;
     height: 50px;
 }
+
 .navbar-header a.navbar-icon {
     margin-left: 25px;
 }
 
-
-#add-point-btn{
+#add-point-btn {
     width: 200px;
     margin:auto;
     display:block;
@@ -234,29 +248,15 @@ input[type=number]::-webkit-outer-spin-button {
     margin: 0;
 }
 
-
 .table-header {
     padding: 2px !important;
     font-size: 9px !important;
     text-align: center;
 }
 
-
 #calc-btn, #run-btn{
     margin-bottom: 5px !important;
 }
-
-
-
-
-
-
-
-/*header {*/
-    /*position: absolute;*/
-    /*top: 10px;*/
-    /*left: 180px;*/
-/*}*/
 
 .hero-unit {
     background: rgba(255, 255, 255, 0.8);
@@ -274,21 +274,12 @@ a.brand:hover {
 .figurehead {
     position: relative;
     text-shadow: -1px -1px 1px #000, 1px 1px 1px #ccc;
-    /*text-shadow: -1px -1px 1px #fff, 1px 1px 1px #000;*/
     color: rgb(72, 167, 35);
     opacity: 0.4;
     font-size: 36px;
     top:-10px;
     left:-10px;
 }
-
-/*#map {*/
-    /*position: absolute;*/
-    /*top: 0;*/
-    /*left: 0;*/
-    /*right: 0;*/
-    /*bottom: 40px;*/
-/*}*/
 
 #right-panel {
     position: absolute;
@@ -303,25 +294,10 @@ label {
     font-weight: bold;
 }
 
-/*.ui-slider {*/
-    /*margin: 14px;*/
-/*}*/
-
-
-
-/*#time-slider2 {*/
-    /*width:400px;*/
-/*}*/
-
 #calendar {
     margin: 5px;
 }
 
-/*TODO: make this work*/
-/*a.leaflet-popup-close-button {
-  top: 3px;
-  right: 3px;
-}*/
 
 input {
     vertical-align: baseline;
@@ -347,14 +323,8 @@ input {
 
 .navbar-nav{
     width: 100%;
-    /*overflow: auto;*/
 }
 
-/*#time-slider {*/
-    /*left:10px;*/
-    /*width:340px;*/
-    /*margin:5px 0px ;*/
-/*}*/
 
 #speed-input{
     top: 140px;
@@ -381,12 +351,6 @@ input {
 .clock{
     float: right !important;
 }
-/*.navbar .btn,*/
-/*.navbar .btn-group {*/
-    /*margin-top: 0;*/
-    /*padding: 0;*/
-    /*!*border: 0;*!*/
-/*}*/
 
 .navbar .nav > li.dropdown {
     padding-top: 0px;
@@ -459,8 +423,6 @@ input {
     *border: 0;
     border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
     border-color: #e6e6e6 #e6e6e6 #bfbfbf;
-    /*border-bottom-color: #b3b3b3;*/
-
     -webkit-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
     -moz-box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -471,8 +433,6 @@ input {
     text-decoration: none;
     background-color: #e6e6e6;
     *background-color: #d9d9d9;
-    /* Buttons in IE7 don't get borders, so darken on hover */
-
     background-position: 0 -15px;
     -webkit-transition: background-position 0.1s linear;
     -moz-transition: background-position 0.1s linear;
@@ -505,7 +465,6 @@ a.accordion-toggle {
     color: #566a6c;
 }
 
-
 .accordion-inner {
     padding: 9px 15px;
     border-top: 1px solid #e5e5e5;
@@ -535,12 +494,8 @@ a.accordion-toggle {
     font-weight: 500;
 }
 
-
-
-
 .checkbox {
     position: relative;
-    /*float:left;*/
     margin: 10px
 }
 
@@ -549,8 +504,6 @@ a.accordion-toggle {
     height: 20px;
     cursor: pointer;
     position: absolute;
-    /*top: 0;*/
-    /*left: 0;*/
     border-radius: 4px;
 }
 
@@ -582,7 +535,6 @@ a.accordion-toggle {
 .checkbox input[type=checkbox]:checked + label:after {
     opacity: 1;
 }
-/* end .squaredThree */
 
 .label-text {
     position: relative;

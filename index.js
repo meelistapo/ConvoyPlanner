@@ -1,43 +1,38 @@
-// const $ = require('jquery');
 require('drmonty-leaflet-awesome-markers');
-// const boot = require('bootstrap');
 require('bootstrap-timepicker');
-let Spinner = require('spin.js');
-require('./src/Clock');
-require('./src/MoveableMarker');
-require('./src/Playback');
-require('./src/Tick');
-require('./src/TickPoint');
-require('./src/Util');
-const fs = require('fs');
+require('./playback/Clock');
+require('./playback/MoveableMarker');
+require('./playback/Playback');
+require('./playback/Tick');
+require('./playback/TickPoint');
+require('./playback/Util');
+require('eonasdan-bootstrap-datetimepicker');
 const knn = require('leaflet-knn');
 const moment = require('moment');
 const nodes = require('./nodes');
 const endpoints = require('./endpoints');
 const roads = require('./roads');
-const tracks = require('./tracks');
-require('eonasdan-bootstrap-datetimepicker');
-let defaultValues = {'length':5000,'speed':50, 'ready': 0, 'due':24, 'headway':5, 'time': 'current','method':'PFO', 'playback':500, 'k':3};
-let convoys = {};
-let mapObjects = {};
+let Spinner = require('spin.js');
 let paths = {};
+let convoys = {};
 let results = {};
+let mapObjects = {};
 let startOrder = [];
+let movingMarkers = [];
+let counter = 0;
 let convoyID = 0;
 let colorIdx = 0;
+let defaultValues = {'length':5000,'speed':50, 'ready': 0, 'due':24, 'headway':5, 'time': 'current','method':'PFO', 'playback':500, 'k':3};
 let colors = ['darkpurple', 'orange', 'darkblue', 'green', 'red',  'black',  'purple',  'blue',  'darkred', 'lightgreen', 'cadetblue',  'pink', 'darkgreen', 'lightred', 'gray', 'beige',  'lightblue', 'lightgray'];
 let hex = {'red': '#D33D2A','darkred':'#A03336', 'lightred':'#FF8D7E', 'orange':'#F49630', 'beige':'#FFCA91', 'green':'#71AF26', 'darkgreen':'#718224', 'lightgreen':'#BBF770', 'blue':'#38A9DB', 'darkblue':'#0065A0', 'lightblue':'#89DBFF', 'purple':'#D051B8', 'darkpurple':'#593869', 'pink':'#FF90E9', 'cadetblue':'#426877', 'gray':'#575757', 'lightgray':'#A3A3A3', 'black':'#303030'};
 let methods = ['PFO','EFO', 'BB - 1', 'BB - 2', 'MILP - 1', 'MILP - 2','MILP - 3', 'Input'];
 let playbackValues = [1, 100, 250, 500, 1000, 2000];
-let movingMarkers = [];
-let dateTimeCounter;
-let dateTime;
 let result;
+let dateTime;
 let duration;
+let dateTimeCounter;
 let isPlaying = false;
 let isAtStart = true;
-let counter = 0;
-
 
 const map = L.map('map', {
     minZoom: 8,
@@ -49,139 +44,20 @@ const map = L.map('map', {
 
 let playGroup = L.featureGroup([]).addTo(map);
 
-
-function writePaths(data){
-    fs.writeFile('tracks.js', data, function(err){
-        if(err){
-            console.log(err);
-        }
-    });
-}
-
-
-
-function assignColor(convoyID) {
-    let color = colors[colorIdx++%18];
-    mapObjects[convoyID]['color'] = color;
-    return color;
-}
-
-
-function updateClock(dateTime = (new Date()).getTime()) {
-    // Update the time display
-    $('#cursor-date').html("&nbsp;&nbsp;"+L.Playback.Util.DateStr(dateTime));
-    $('#cursor-time').html("&nbsp;"+L.Playback.Util.TimeStr(dateTime));
-}
-
-
-
-function init_video(tracks) {
-    // Colors for AwesomeMarkers
-
-
-
-
-    // =====================================================
-    // =============== Playback ============================
-    // =====================================================
-
-    // Playback options
-    var playbackOptions = {
-        playControl: true,
-        dateControl: true,
-        sliderControl: true
-    };
-
-
-    // Initialize playback
-    var playback = new L.Playback(map, null, null, playbackOptions);
-
-    // Initialize custom control
-    var control = new L.Playback.Control(playback);
-    control.addTo(map);
-
-    // Add data
-    console.log(tracks);
-    playback.addData(tracks);
-
-}
-
-function start(startTime, path, color, duration, passingTime){
-    // console.log(startTime, duration, passingTime);
-    // console.log(path, color);
-    if (startTime === 0) {
-        drawPath(L.polyline(path), color, duration, passingTime);
-        return false
-    }
-    let start = +new Date;
-    let interval = setInterval(function () {
-        let time = (new Date - start);
-        if (time >= startTime) {
-            drawPath(L.polyline(path), color, duration, passingTime);
-            clearInterval(interval);
-        }
-    }, 0);
-    return false
-}
-
-function msToTime(duration) {
-    let milliseconds = parseInt((duration % 1000) / 100), seconds = parseInt((duration / 1000) % 60), minutes = parseInt((duration / (1000 * 60)) % 60), hours = parseInt((duration / (1000 * 60 * 60)) % 24);
-    hours = (hours < 10) ? "0" + hours : hours;
-    minutes = (minutes < 10) ? "0" + minutes : minutes;
-    seconds = (seconds < 10) ? "0" + seconds : seconds;
-
-    return hours + ":" + minutes + ":" + seconds;
-}
-
-
-function resetPlay() {
-    isPlaying = false;
-    isAtStart = true;
-    playGroup.clearLayers();
-    let icon = $('#play-pause-icon');
-    icon.removeClass('glyphicon glyphicon-pause');
-    icon.addClass('glyphicon glyphicon-play');
-}
-
 $(function () {
     // add map tiles
     L.tileLayer('tiles/{z}/{x}/{y}.png').addTo(map);
     // add zoom control
     L.control.zoom({position:'topright'}).addTo(map);
-    L.control.scale({'imperial':false}).addTo(map)
-
-
+    L.control.scale({'imperial':false}).addTo(map);
+    //initiate clock
     updateClock();
     dateTimeCounter = setInterval(updateClock, 1000);
-
-
-
-    //
-    // //fences
-    //
-    //
-    // let demoTracks = [tracks];
-    //
-    // let samples = new L.GeoJSON(demoTracks, {
-    //     pointToLayer: function(geojson, latlng) {
-    //         var circle = new L.CircleMarker(latlng, {radius:5});
-    //         // circle.bindPopup(i);
-    //         return circle;
-    //     }
-    // });
-    //
-    //
-    //
-    // let playback = new L.Playback(map, demoTracks, clockCallback);
-
-
 
 
     $('#play-pause').click(function() {
         let icon = $('#play-pause-icon');
         if (isPlaying === false && result) {
-            // playback.start();
-            // geoTriggers.startPolling();
             icon.removeClass('glyphicon glyphicon-play');
             icon.addClass('glyphicon glyphicon-pause');
 
@@ -209,9 +85,7 @@ $(function () {
             isPlaying = true;
 
         } else {
-            // playback.stop();
             pauseMarkers();
-            // geoTriggers.stopPolling();
             icon.removeClass('glyphicon glyphicon-pause');
             icon.addClass('glyphicon glyphicon-play');
             isPlaying = false;
@@ -225,75 +99,21 @@ $(function () {
         $('#playback').removeClass('hidden');
     });
 
-    // $('#set-cursor').click(function(){
-    //     var val = $('#cursor-time').val();
-    //     playback.setCursor(val);
-    //     $('#time-slider').slider('value', val);
-    // });
-
-    // $('#start-time-txt').html(new Date(playback.getStartTime()).toString());
-    // startTime = playback.getStartTime();
-    // startTime = (new Date()).getTime();
-    // $('#cursor-date').html("&nbsp;&nbsp;"+L.Playback.Util.DateStr(startTime));
-    // $('#cursor-time').html("&nbsp;&nbsp;"+L.Playback.Util.TimeStr(startTime));
-
-    // $('#time-slider').slider({
-    //     // min: playback.getStartTime(),
-    //     // max: playback.getEndTime(),
-    //     // step: playback.getTickLen(),
-    //     // value: playback.getTime(),
-    //     min: startMoment + dateTime,
-    //     max: endMoment + dateTime,
-    //     step: playback.getTickLen(),
-    //     value: dateTime,
-    //     slide: function( event, ui ) {
-    //         playback.setCursor(ui.value);
-    //         $('#cursor-time').val(ui.value.toString());
-    //         $('#cursor-time-txt').html(new Date(ui.value).toString());
-    //     }
-    // });
-
-    // $('#cursor-time').val(playback.getTime().toString());
-    // $('#speed').val(playback.getSpeed().toString());
-
-
-    // $("#speed-input").val( playbackValues[ui.value] );
-
     $("#speed-input").val(defaultValues['playback']);
     $('#speed-icon-val').html(defaultValues['playback']);
 
     $('#speed-slider').slider({
-        // min: -9,
         min: 0,
-        // max: 9,
         max: 5,
-        // step: .1,
         step: 1,
         value: playbackValues.indexOf(defaultValues['playback']),
-        // value: speedToSliderVal(playback.getSpeed()),
         orientation: 'vertical',
         slide: function( event, ui ) {
             $("#speed-input").val( playbackValues[ui.value] );
-            // $("#label").text(playbackValues[ui.value]);
             $('#speed-icon-val').html(playbackValues[ui.value]);
             defaultValues['playback']= playbackValues[ui.value]
-            // var speed = sliderValToSpeed(parseFloat(ui.value));
-            // playback.setSpeed(speed);
-            // $('.speed').html(speed).val(speed);
         }
     });
-    //
-    // $('#speed-input').on('keyup', function(e) {
-    //     console.log("haaa")
-    //     var speed = parseFloat($('#speed-input').val());
-    //     if (!speed) return;
-    //     playback.setSpeed(speed);
-    //     $('#speed-slider').slider('value', speedToSliderVal(speed));
-    //     $('#speed-icon-val').html(speed);
-    //     if (e.keyCode === 13) {
-    //         $('.speed-menu').dropdown('toggle');
-    //     }
-    // });
 
     $('#calendar').datepicker({
         changeMonth: true,
@@ -305,7 +125,6 @@ $(function () {
             var date = new Date(date);
             var time =  $('#timepicker-input').val();
             var ts = combineDateAndTime(date, time);
-            // playback.setCursor(ts);
             updateClock(ts);
             $('#time-slider').slider('value', ts);
         }
@@ -326,23 +145,6 @@ $(function () {
 
 
     $('#timepicker-input').val($('#cursor-time').text());
-
-    // $('#timepicker').timepicker({
-    //     showSeconds: true
-    // });
-    // $('#timepicker').datetimepicker('setTime',
-    //     new Date(dateTime).toTimeString());
-
-    // $('#timepicker').datetimepicker().on('changeTime.timepicker', function(e) {
-    //     var date = $('#calendar').datepicker('getDate');
-    //     var ts = combineDateAndTime(date, e.time);
-    //     playback.setCursor(ts);
-    //     $('#time-slider').slider('value', ts);
-    // });
-
-
-
-
 
     // insert default values to settings
     $("input[data-field=default_k]").val(defaultValues['k']);
@@ -376,7 +178,6 @@ $(function () {
     $('#add-btn').click(function () {
         convoyID++;
         addConvoy(convoyID);
-
         convoys[convoyID]= {};
         convoys[convoyID]['length']= defaultValues['length'];
         convoys[convoyID]['speed']= defaultValues['speed'];
@@ -384,17 +185,13 @@ $(function () {
         convoys[convoyID]['due']= defaultValues['due'];
         mapObjects[convoyID]= [];
 
-
-
         $("#origin_" + convoyID +",#destination_" + convoyID).each(function() {
             $(this).click(function () {
                 let id = this.id;
                 map.on('click', (function(e) {
                     addMarker(e, id);
                     map.off('click');
-                    console.log('rr')
                 }));
-                console.log('sss')
                 $(this).off('click');
             });
         });
@@ -470,16 +267,13 @@ $(function () {
 
 
     $('#calc-btn').click(function () {
-
         // start spinner
         let spinner = new Spinner().spin($('#map')[0]);
-
 
         resetPlay();
         $('#stop').addClass('hidden');
         $('.play').addClass('hidden');
         $('#stat-menu').addClass('hidden');
-
 
         //stop clock
         clearInterval(dateTimeCounter);
@@ -493,17 +287,13 @@ $(function () {
             }
         }
         let input = [inputConvoys, defaultValues['headway'], defaultValues['k'], defaultValues['method']];
-        console.log(input);
         getPaths(input, function(output){
             if (output.startsWith('error')){
-                console.log(output);
                 alert(output.split('-')[1]);
                 $('.spinner').remove();
             }
             else {
-                console.log(output)
                 result = JSON.parse(output);
-                console.log(result);
                 startOrder = [];
                 let featureGroup = [];
                 let startMoment;
@@ -556,7 +346,6 @@ $('#run-btn').click(function () {
 });
 
 // settings menu modifying options
-
 $('.modify').click(function(){
     modifyNumbers(this, convoyID);
 });
@@ -570,7 +359,6 @@ $('.input-number').change(function() {
 });
 
 
-
 $('#clock-btn').click(function (){
     clearInterval(dateTimeCounter);
 });
@@ -582,6 +370,53 @@ $('#now').click(function (){
     $('#timepicker-input').val($('#cursor-time').text())
 });
 
+
+function assignColor(convoyID) {
+    let color = colors[colorIdx++%18];
+    mapObjects[convoyID]['color'] = color;
+    return color;
+}
+
+function updateClock(dateTime = (new Date()).getTime()) {
+    // Update the time display
+    $('#cursor-date').html("&nbsp;&nbsp;"+L.Playback.Util.DateStr(dateTime));
+    $('#cursor-time').html("&nbsp;"+L.Playback.Util.TimeStr(dateTime));
+}
+
+function start(startTime, path, color, duration, passingTime){
+    if (startTime === 0) {
+        drawPath(L.polyline(path), color, duration, passingTime);
+        return false
+    }
+    let start = +new Date;
+    let interval = setInterval(function () {
+        let time = (new Date - start);
+        if (time >= startTime) {
+            drawPath(L.polyline(path), color, duration, passingTime);
+            clearInterval(interval);
+        }
+    }, 0);
+    return false
+}
+
+function msToTime(duration) {
+    let milliseconds = parseInt((duration % 1000) / 100), seconds = parseInt((duration / 1000) % 60), minutes = parseInt((duration / (1000 * 60)) % 60), hours = parseInt((duration / (1000 * 60 * 60)) % 24);
+    hours = (hours < 10) ? "0" + hours : hours;
+    minutes = (minutes < 10) ? "0" + minutes : minutes;
+    seconds = (seconds < 10) ? "0" + seconds : seconds;
+
+    return hours + ":" + minutes + ":" + seconds;
+}
+
+
+function resetPlay() {
+    isPlaying = false;
+    isAtStart = true;
+    playGroup.clearLayers();
+    let icon = $('#play-pause-icon');
+    icon.removeClass('glyphicon glyphicon-pause');
+    icon.addClass('glyphicon glyphicon-play');
+}
 
 function addConvoy(convoyID){
     let row = '<tr id="row_' + convoyID +'"><td><button type="button" class="nr btn btn-lg btn-default id" id="ID_' + convoyID +'" title="Convoy ID"></td>' +
@@ -614,9 +449,7 @@ function addConvoy(convoyID){
     $('#ID_' + convoyID).text(convoyID+'.');
 
     // convoys menu modifying options
-
     $('.modify_'+convoyID).click(function(){
-        console.log(this)
         modifyNumbers(this, convoyID);
     });
 
@@ -629,17 +462,13 @@ function addConvoy(convoyID){
     });
 }
 
-
-
 function modifyNumbers(button, convoyID){
     let fieldID = $(button).attr('data-field');
     let fieldName = fieldID.split('_')[0];
     let defaultName = fieldID.split('_')[1];
     let type      = $(button).attr('data-type');
     let input = $("input[data-field='"+fieldID+"']");
-    console.log(input);
     let currentVal = parseInt(input.val());
-    console.log("lajter!",  currentVal);
     if (!isNaN(currentVal)) {
         if(type === 'minus') {
             if(currentVal > input.attr('min')) {
@@ -682,7 +511,6 @@ function modifyInput(input, convoyID){
     }
 }
 
-
 function changeValue(fieldName, defaultName, convoyID, value){
     if(fieldName === 'default'){
         defaultValues[defaultName] = value;
@@ -692,10 +520,7 @@ function changeValue(fieldName, defaultName, convoyID, value){
     }
 }
 
-
-
 // menu buttons
-
 $("#about-btn").click(function() {
     $("#aboutModal").modal("show");
     $(".navbar-collapse.in").collapse("hide");
@@ -715,14 +540,12 @@ $("#full-extent-btn").click(function() {
     return false;
 });
 
-
 $('#list-menu, .sidebar-hide-btn').click(function() {
     let statbar = $('.statbar');
     if (!statbar.hasClass('closed')){
         toggleStatbar();
     }
     animateSidebar();
-    console.log($('#features').hasClass('hidden'));
     $('#features').toggleClass("hidden");
     return false;
 });
@@ -734,7 +557,6 @@ $('#stat-menu, .navbar-toggle-btn').click(function() {
     }
     toggleStatbar();
 });
-
 
 function toggleStatbar() {
     if (startOrder.length > 0) {
@@ -751,6 +573,7 @@ function toggleStatbar() {
                 addStatRow(convoyID);
                 rows = $("#stat-list").find("tr").length;
             }
+            map.fitBounds(mapObjects['group'].getBounds(),{padding: [20,20]});
             let sidebar = $('#features');
             $('.navbar-fixed-bottom').addClass("hidden");
             if (!sidebar.hasClass("hidden")) {
@@ -773,8 +596,6 @@ function toggleStatbar() {
     }
 }
 
-
-
 function animateSidebar() {
     let toggleWidth = $("#sidebar").width() == 460 ? "0px" : "460px";
     $("#sidebar").animate({
@@ -783,7 +604,6 @@ function animateSidebar() {
         map.invalidateSize();
     });
 }
-
 
 function animateStatbar(nr) {
     let calcHeight;
@@ -807,36 +627,6 @@ function animateStatbar(nr) {
         map.invalidateSize();
     });
 }
-
-
-
-function sizeLayerControl() {
-    $(".leaflet-control-layers").css("max-height", $("#map").height() - 50);
-}
-
-function clearHighlight() {
-    highlight.clearLayers();
-}
-
-function sidebarClick(id) {
-    var layer = markerClusters.getLayer(id);
-    map.setView([layer.getLatLng().lat, layer.getLatLng().lng], 17);
-    layer.fire("click");
-    /* Hide sidebar and go to the map on small screens */
-    if (document.body.clientWidth <= 767) {
-        $("#sidebar").hide();
-        map.invalidateSize();
-    }
-}
-
-
-
-
-
-
-
-
-
 
 function addStatRow(convoyID){
     let distance = results[convoyID]['distance'];
@@ -899,7 +689,6 @@ $('#zoom_group').click(function () {
     map.fitBounds(mapObjects['group'].getBounds());
 });
 
-
 function drawPath(path, color, duration, length){
   let pathLine = L.polyline([], {color: color, weight: 5});
   let marker = L.Marker.movingMarker(path.getLatLngs(), duration, {opacity: 0});
@@ -932,7 +721,6 @@ function drawPath(path, color, duration, length){
   }, length);
 }
 
-
 function pauseMarkers() {
     for (let i = 0; i < movingMarkers.length; i++) {
         movingMarkers[i].pause();
@@ -948,10 +736,6 @@ function stopMarkers() {
     for (let i = 0; i < movingMarkers.length; i++) {
         movingMarkers[i].stop();
     }
-}
-
-function createTimestamps(){
-
 }
 
 function addMarker(e, id) {
@@ -1005,7 +789,6 @@ function findNearestNode(marker) {
 
 function updateConvoys(ID, feature, nearest){
     convoys[ID][feature]= nearest['layer']['feature']['properties'];
-    console.log(convoys[ID]);
     if(Object.keys(convoys[ID]).length == 6){
         if(!$('#calc-btn').hasClass("hidden")) {
         }
@@ -1016,7 +799,6 @@ function updateConvoys(ID, feature, nearest){
         $($('#row_' + ID)[0].firstChild.firstChild).css({'background-color': hex[mapObjects[ID]['color']], 'color':'white'});
     }
 }
-
 
 function constructPath(pathNodes){
     let pathList = [];
@@ -1037,55 +819,7 @@ function constructPath(pathNodes){
     return [].concat.apply([], pathList)
 }
 
-
-
-
-
-
-function clockCallback(ms) {
-    $('#cursor-date').html(L.Playback.Util.DateStr(ms));
-    $('#cursor-time').html(L.Playback.Util.TimeStr(ms));
-    $('#time-slider').slider('value', ms);
-    // $('#timepicker').timepicker('setTime', new Date(ms).toTimeString());
-}
-
-function speedToSliderVal(speed) {
-    if (speed < 1) return -10+speed*10;
-    return speed - 1;
-}
-
-function sliderValToSpeed(val) {
-    if (val < 0) return parseFloat((1+val/10).toFixed(2));
-    return val + 1;
-}
-
-function triggerFired(trigger) {
-    var html =
-        '<div class="accordion-inner">' +
-        '  <strong>'+trigger.place.name+'</strong>' +
-        '  <span class="broadcast-time">'+ trigger.display_date + '</span>' +
-        '  <br/>' +
-        trigger.trigger.text + '<br/>' +
-        '  <button class="btn btn-info btn-small view-notification"><i class="icon-eye-open"></i> View</button>'+
-        '</div>';
-
-    $('#notifications').prepend(html);
-    var count = $('#notifications').children().length;
-    $('#notification-count').html('<span class="badge badge-important pull-right">'+count+'</span>');
-    var $btn = $('#notifications').find('button').first();
-    $btn.data('trigger',trigger);
-    $btn.on('click', function(e) {
-        var lat = trigger.place.latitude;
-        var lng = trigger.place.longitude;
-        var radius = trigger.place.radius * 1.5;
-        var circle = new L.Circle([lat,lng],radius);
-        var bounds = circle.getBounds();
-        map.fitBounds(bounds);
-    });
-}
-
 function combineDateAndTime(date, time) {
-    // console.log(date,time)
     let parts = time.split(':');
     let yr = date.getFullYear();
     let mo = date.getMonth();
@@ -1093,37 +827,5 @@ function combineDateAndTime(date, time) {
     let hr = parseInt(parts[0]);
     let min = parseInt(parts[1]);
     let sec = parseInt(parts[2]);
-
-    // console.log(time, yr, hr, min, sec)
-    // the calendar uses hour and the timepicker uses hours...
-    // var hr = time.hours || time.hour;
-    // if (time.meridian == 'PM' && hr != 12) hr += 12;
-    // var min = time.minutes || time.minute;
-    // var sec = time.seconds || time.second;
     return new Date(yr, mo, dy, hr, min, sec).getTime();
 }
-
-
-
-function save(data, name) {
-    var json = JSON.stringify(data, null, 2);
-    var blob = new Blob([json], {type:'text/plain'});
-    var downloadLink = document.createElement("a");
-    var url = (window.webkitURL != null ? window.webkitURL : window.URL);
-    downloadLink.href = url.createObjectURL(blob);
-    downloadLink.download = name || 'data.json';
-    downloadLink.click();
-}
-
-function sliceData(data, start,end) {
-    end = end || data.geometry.coordinates.length-1;
-    data.geometry.coordinates = data.geometry.coordinates.slice(start,end);
-    data.properties.time = data.properties.time.slice(start,end);
-    data.properties.speed = data.properties.speed.slice(start,end);
-    data.properties.altitude = data.properties.altitude.slice(start,end);
-    data.properties.heading = data.properties.heading.slice(start,end);
-    data.properties.horizontal_accuracy = data.properties.horizontal_accuracy.slice(start,end);
-    data.properties.vertical_accuracy = data.properties.vertical_accuracy.slice(start,end);
-    save(data,'sliced-data.json');
-}
-

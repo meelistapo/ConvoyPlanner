@@ -17,22 +17,17 @@ function connect(){
 }
 
 function getPaths(data, callback) {
-        console.log(data);
         client.invoke("generatePaths", data, (error, result) => {
         if(error) {
-            console.error(error);
             callback("error-"+error);
             createPyProc();
             connect();
         }
         else {
-            console.log(result);
             callback(result);
         }
     })
 }
-
-
 
 let pyProc = null;
 let pyPort = null;
@@ -41,7 +36,6 @@ const selectPort = () => {
     pyPort = 4242;
     return pyPort
 };
-
 
 function createPyProc() {
     let port = '' + selectPort();
