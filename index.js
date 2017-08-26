@@ -573,7 +573,7 @@ function toggleStatbar() {
                 addStatRow(convoyID);
                 rows = $("#stat-list").find("tr").length;
             }
-            map.fitBounds(mapObjects['group'].getBounds(),{padding: [20,20]});
+            map.fitBounds(mapObjects['group'].getBounds());
             let sidebar = $('#features');
             $('.navbar-fixed-bottom').addClass("hidden");
             if (!sidebar.hasClass("hidden")) {
