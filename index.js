@@ -17,17 +17,17 @@ const endpoints = require('./endpoints');
 const roads = require('./roads');
 const tracks = require('./tracks');
 require('eonasdan-bootstrap-datetimepicker');
-let defaultValues = {'length':5000,'speed':50, 'ready': 0, 'due':24, 'headway':5, 'time': 'current','method':'MILP - 3', 'playback':500, 'k':3};
+let defaultValues = {'length':5000,'speed':50, 'ready': 0, 'due':24, 'headway':5, 'time': 'current','method':'PFO', 'playback':500, 'k':3};
 let convoys = {};
 let mapObjects = {};
 let paths = {};
-let times = {};
+let results = {};
 let startOrder = [];
 let convoyID = 0;
 let colorIdx = 0;
 let colors = ['darkpurple', 'orange', 'darkblue', 'green', 'red',  'black',  'purple',  'blue',  'darkred', 'lightgreen', 'cadetblue',  'pink', 'darkgreen', 'lightred', 'gray', 'beige',  'lightblue', 'lightgray'];
 let hex = {'red': '#D33D2A','darkred':'#A03336', 'lightred':'#FF8D7E', 'orange':'#F49630', 'beige':'#FFCA91', 'green':'#71AF26', 'darkgreen':'#718224', 'lightgreen':'#BBF770', 'blue':'#38A9DB', 'darkblue':'#0065A0', 'lightblue':'#89DBFF', 'purple':'#D051B8', 'darkpurple':'#593869', 'pink':'#FF90E9', 'cadetblue':'#426877', 'gray':'#575757', 'lightgray':'#A3A3A3', 'black':'#303030'};
-let methods = ['EFO','PFO', 'BB - 1', 'BB - 2', 'MILP - 1', 'MILP - 2','MILP - 3', 'Input'];
+let methods = ['PFO','EFO', 'BB - 1', 'BB - 2', 'MILP - 1', 'MILP - 2','MILP - 3', 'Input'];
 let playbackValues = [1, 100, 250, 500, 1000, 2000];
 let movingMarkers = [];
 let dateTimeCounter;
@@ -192,9 +192,9 @@ $(function () {
             if (isAtStart){
                 for (let i = 0; i < startOrder.length; i++) {
                     let convoyID = startOrder[i];
-                    let travelTime = times[convoyID]['travel']/defaultValues['playback'];
-                    let startTime = times[convoyID]['start']/defaultValues['playback'];
-                    let passingTime = times[convoyID]['pass']/defaultValues['playback'];
+                    let travelTime = results[convoyID]['travel']/defaultValues['playback'];
+                    let startTime = results[convoyID]['start']/defaultValues['playback'];
+                    let passingTime = results[convoyID]['pass']/defaultValues['playback'];
                     let color = hex[mapObjects[convoyID]['color']];
                     start(startTime, paths[convoyID], color, travelTime, passingTime);
                 }
@@ -421,7 +421,7 @@ $(function () {
                     resetPlay();
                 }
                 paths = {};
-                times={};
+                results={};
                 $('.play').addClass("hidden");
                 $('#stop').addClass("hidden");
                 $('#stat-menu').addClass("hidden");
@@ -518,10 +518,11 @@ $(function () {
                     paths[convoyID] = constructPath(path);
                     mapObjects[convoyID]['path']= L.polyline(paths[convoyID], {color: color, weight: 5});
                     featureGroup.push(mapObjects[convoyID]['path']);
-                    times[convoyID] = {};
-                    times[convoyID]['travel']= travelTime;
-                    times[convoyID]['start']= startTime;
-                    times[convoyID]['pass']= passingTime;
+                    results[convoyID] = {};
+                    results[convoyID]['travel']= travelTime;
+                    results[convoyID]['start']= startTime;
+                    results[convoyID]['pass']= passingTime;
+                    results[convoyID]['distance']= (result[i][1]*convoys[convoyID]['speed']).toFixed(2);
                     startOrder.push(convoyID);
                     if (i === 0){
                         startMoment = startTime;
@@ -545,9 +546,9 @@ $('#run-btn').click(function () {
     if (result){
         for (let i = 0; i < startOrder.length; i++) {
             let convoyID = startOrder[i];
-            let travelTime = times[convoyID]['travel']/defaultValues['playback'];
-            let startTime = times[convoyID]['start']/defaultValues['playback'];
-            let passingTime = times[convoyID]['pass']/defaultValues['playback'];
+            let travelTime = results[convoyID]['travel']/defaultValues['playback'];
+            let startTime = results[convoyID]['start']/defaultValues['playback'];
+            let passingTime = results[convoyID]['pass']/defaultValues['playback'];
             let color = hex[mapObjects[convoyID]['color']];
             start(startTime, paths[convoyID], color, travelTime, passingTime);
         }
@@ -838,9 +839,10 @@ function sidebarClick(id) {
 
 
 function addStatRow(convoyID){
-    let startTime  = dateTime +  times[convoyID]['start'];
-    let travelTime = times[convoyID]['travel'];
-    let passingTime = times[convoyID]['pass'];
+    let distance = results[convoyID]['distance'];
+    let startTime  = dateTime +  results[convoyID]['start'];
+    let travelTime = results[convoyID]['travel'];
+    let passingTime = results[convoyID]['pass'];
     let finishTime = startTime + travelTime + passingTime;
 
     let row = '<tr class = "stat-row" id="stat-row_' + convoyID +'" align = "center">' +
@@ -854,6 +856,7 @@ function addStatRow(convoyID){
         '<button type="button" class="btn btn-md btn-default zoom" id = "zoom_' + convoyID +'"><i class="glyphicon glyphicon-zoom-in"></i></button>'+
         '</td>' +
         '<td><label class = "stat-label" id = "stat_ID_' + convoyID +'"></label></td>' +
+        '<td><label class = "stat-label" id ="distance_' + convoyID +'"></label></td>' +
         '<td><label class = "stat-label" id ="stat_start_' + convoyID +'"></label></td>' +
         '<td><label class = "stat-label" id = "stat_finish_' + convoyID +'"></label></td>' +
         '<td><label class = "stat-label" id = "stat_travel_' + convoyID +'"></label></td>' +
@@ -863,6 +866,7 @@ function addStatRow(convoyID){
     let table = $('#stat-list');
     table.append(row);
     $('#stat_ID_' + convoyID).text(convoyID+'.');
+    $('#distance_' + convoyID).text(distance+' km');
     $('#stat_start_' + convoyID).html(L.Playback.Util.DateStr(startTime)+"<br />"+L.Playback.Util.TimeStr(startTime));
     $('#stat_finish_' + convoyID).html(L.Playback.Util.DateStr(finishTime)+"<br />"+L.Playback.Util.TimeStr(finishTime));
     $('#stat_travel_' + convoyID).html(msToTime(travelTime));
